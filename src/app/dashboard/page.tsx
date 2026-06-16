@@ -252,6 +252,13 @@ export default async function DashboardPage({
                 userId={user.id}
                 existingPages={pages || []}
               />
+              {(!pages || pages.length === 0) && (
+                <p className="mt-3 text-center text-xs text-gray-400">
+                  <Link href="/dashboard/connect" className="hover:text-[#ff6b6b] underline">
+                    Or connect manually with Page Token →
+                  </Link>
+                </p>
+              )}
 
             </section>
 
