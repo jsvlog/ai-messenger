@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { FacebookConnect } from '@/components/Dashboard/FacebookConnect';
-import { ManualPageConnect } from '@/components/Dashboard/ManualPageConnect';
+// ManualPageConnect imported dynamically when needed — see JSX below
 import { AIToggle } from '@/components/Dashboard/AIToggle';
 import { KnowledgeBaseUploader } from '@/components/Dashboard/KnowledgeBaseUploader';
 import { SchedulingConfig } from '@/components/Dashboard/SchedulingConfig';
@@ -253,17 +253,6 @@ export default async function DashboardPage({
                 existingPages={pages || []}
               />
 
-              {/* Manual connect — hidden behind toggle for power users */}
-              {(!pages || pages.length === 0) && (
-                <details className="mt-4">
-                  <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">
-                    Having trouble? Connect manually →
-                  </summary>
-                  <div className="mt-3">
-                    <ManualPageConnect userId={user.id} onSuccess={() => {}} />
-                  </div>
-                </details>
-              )}
             </section>
 
             {/* AI Toggle */}
