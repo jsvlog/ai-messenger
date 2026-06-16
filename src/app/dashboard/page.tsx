@@ -18,13 +18,18 @@ import { OnboardingWizard } from '@/components/Dashboard/OnboardingWizard';
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; success?: string; error?: string; count?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
   const params = await searchParams;
+  const statusMessage = params.success
+    ? { type: 'success' as const, text: `✅ Connected ${params.count || ''} page(s) successfully!` }
+    : params.error
+      ? { type: 'error' as const, text: `❌ Connection failed: ${params.error}` }
+      : null;
   const selectedPageId = params.page;
 
   // Fetch tenant's connected pages
@@ -110,6 +115,17 @@ export default async function DashboardPage({
           </div>
         </div>
       </header>
+
+      {/* Status banner (success/error from FB connect) */}
+      {statusMessage && (
+        <div className={`w-full py-3 px-6 text-center text-sm font-medium ${
+          statusMessage.type === 'success'
+            ? 'bg-green-50 text-green-700 border-b border-green-200'
+            : 'bg-red-50 text-red-700 border-b border-red-200'
+        }`}>
+          {statusMessage.text}
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* ============ ONBOARDING WIZARD ============ */}
