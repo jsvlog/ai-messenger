@@ -1,0 +1,108 @@
+/* ============================================================
+ * AI Messenger SaaS — Global Styles (Warm Sunset Design System)
+ * ============================================================ */
+@import "tailwindcss";
+
+/* --- Design Tokens --- */
+:root {
+  --color-coral: #ff6b6b;
+  --color-amber: #ffa94d;
+  --color-gold: #f7c948;
+  --color-warm-bg: #fef9f0;
+  --color-card: rgba(255, 255, 255, 0.8);
+  --radius-card: 16px;
+  --radius-button: 12px;
+  --shadow-card: 0 4px 24px rgba(255, 107, 107, 0.1);
+  --shadow-button: 0 4px 16px rgba(255, 107, 107, 0.3);
+}
+
+/* --- Scrollbar --- */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, var(--color-coral), var(--color-amber));
+  border-radius: 3px;
+}
+
+/* --- Gradient Text Utility --- */
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-coral), var(--color-amber));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* --- Gradient Button Base --- */
+.gradient-btn {
+  background: linear-gradient(135deg, var(--color-coral), var(--color-amber));
+  color: white;
+  border: none;
+  border-radius: var(--radius-button);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+.gradient-btn:hover {
+  box-shadow: var(--shadow-button);
+  transform: translateY(-1px);
+}
+.gradient-btn:active {
+  transform: translateY(0);
+}
+
+/* --- Card Base --- */
+.warm-card {
+  background: var(--color-card);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 169, 77, 0.2);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* --- Floating Orbs --- */
+.orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 0;
+}
+.orb-coral {
+  background: var(--color-coral);
+  width: 400px;
+  height: 400px;
+  top: -100px;
+  left: -100px;
+}
+.orb-amber {
+  background: var(--color-amber);
+  width: 500px;
+  height: 500px;
+  bottom: -150px;
+  right: -150px;
+}
+
+/* --- Skeleton loading --- */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #fef3e6 25%, #ffede0 50%, #fef3e6 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* --- Transitions --- */
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
