@@ -54,6 +54,16 @@ export async function GET(request: NextRequest) {
 
     // Step 3: Fetch user's pages
     const pages = await getUserPages(longLivedToken);
+    console.log('[FB Auth] Pages fetched:', pages.length, JSON.stringify(pages.map(p => ({ id: p.id, name: p.name }))));
+
+    if (pages.length === 0) {
+      // Try fetching with short-lived token as fallback
+      const pages2 = await getUserPages(shortLivedToken);
+      console.log('[FB Auth] Fallback pages:', pages2.length);
+      if (pages2.length > 0) {
+        pages.push(...pages2);
+      }
+    }
 
     if (pages.length === 0) {
       return NextResponse.redirect(
