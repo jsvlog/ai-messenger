@@ -119,25 +119,18 @@ export async function exchangeForLongLivedToken(
  */
 export async function getUserPages(
   userAccessToken: string
-): Promise<{ id: string; name: string; category: string; access_token: string }[]> {
+): Promise<{ pages: { id: string; name: string; category: string; access_token: string }[]; rawResponse: string }> {
   try {
-    // Log token validity first
-    const meRes = await fetch(`${META_API_BASE}/me?access_token=${userAccessToken}&fields=id,name`);
-    const meData = await meRes.json();
-    console.log('[Meta] /me response:', JSON.stringify(meData));
-
     const url = `${META_API_BASE}/me/accounts?access_token=${userAccessToken}&fields=id,name,category,access_token`;
     const res = await fetch(url);
     const data = await res.json();
-
-    console.log('[Meta] /me/accounts raw:', JSON.stringify(data).slice(0, 300));
+    const raw = JSON.stringify(data);
 
     if (data.error) {
-      console.error('[Meta] Error fetching pages:', data.error);
-      return [];
+      return { pages: [], rawResponse: raw };
     }
 
-    return (data.data || []).map(
+    const pages = (data.data || []).map(
       (p: { id: string; name: string; category: string; access_token: string }) => ({
         id: p.id,
         name: p.name,
@@ -145,9 +138,10 @@ export async function getUserPages(
         access_token: p.access_token,
       })
     );
+
+    return { pages, rawResponse: raw };
   } catch (err) {
-    console.error('[Meta] Failed to fetch pages:', err);
-    return [];
+    return { pages: [], rawResponse: String(err) };
   }
 }
 

@@ -53,22 +53,20 @@ export async function GET(request: NextRequest) {
     const longLivedToken = longLivedData.access_token;
 
     // Step 3: Fetch user's pages
-    const pages = await getUserPages(longLivedToken);
-    console.log('[FB Auth] Pages fetched:', pages.length, JSON.stringify(pages.map(p => ({ id: p.id, name: p.name }))));
+    const { pages, rawResponse } = await getUserPages(longLivedToken);
 
     if (pages.length === 0) {
-      // Try fetching with short-lived token as fallback
-      const pages2 = await getUserPages(shortLivedToken);
-      console.log('[FB Auth] Fallback pages:', pages2.length);
+      // Try short-lived token
+      const { pages: pages2, rawResponse: raw2 } = await getUserPages(shortLivedToken);
       if (pages2.length > 0) {
         pages.push(...pages2);
+      } else {
+        // Show raw Facebook response in error
+        const fbMsg = rawResponse.slice(0, 200) || raw2.slice(0, 200) || 'empty';
+        return NextResponse.redirect(
+          new URL(`/dashboard?error=${encodeURIComponent('no_pages: ' + fbMsg)}`, request.url).toString()
+        );
       }
-    }
-
-    if (pages.length === 0) {
-      return NextResponse.redirect(
-        new URL('/dashboard?error=no_pages', request.url).toString()
-      );
     }
 
     // Step 4: Save connected pages to DB
