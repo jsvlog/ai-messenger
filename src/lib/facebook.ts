@@ -121,10 +121,23 @@ export async function getUserPages(
   userAccessToken: string
 ): Promise<{ pages: { id: string; name: string; category: string; access_token: string }[]; rawResponse: string }> {
   try {
-    const url = `${META_API_BASE}/me/accounts?access_token=${userAccessToken}&fields=id,name,category,access_token`;
+    const url = `${META_API_BASE}/me/accounts?access_token=${userAccessToken}&fields=id,name,category,access_token&limit=100`;
     const res = await fetch(url);
     const data = await res.json();
     const raw = JSON.stringify(data);
+
+    // If empty, try alternate endpoint syntax
+    if (!data.error && (!data.data || data.data.length === 0)) {
+      const altUrl = `${META_API_BASE}/me?fields=accounts{id,name,category,access_token}&access_token=${userAccessToken}`;
+      const altRes = await fetch(altUrl);
+      const altData = await altRes.json();
+      if (altData.accounts?.data?.length > 0) {
+        return {
+          pages: altData.accounts.data.map((p: any) => ({ id: p.id, name: p.name, category: p.category || 'Unknown', access_token: p.access_token })),
+          rawResponse: JSON.stringify(altData)
+        };
+      }
+    }
 
     if (data.error) {
       return { pages: [], rawResponse: raw };
