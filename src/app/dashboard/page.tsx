@@ -33,43 +33,54 @@ export default async function DashboardPage({
       : null;
   const selectedPageId = params.page;
 
-  // Fetch tenant's connected pages
-  const { data: pages } = await supabase
-    .from('connected_pages')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+  // Fetch tenant's connected pages (with error fallback)
+  let pages: any[] = [];
+  let profile: any = null;
+  let subscription: any = null;
+  let hasKb = false;
+
+  try {
+    const { data: pagesData } = await supabase
+      .from('connected_pages')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    pages = pagesData || [];
+
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+    profile = profileData;
+
+    const { data: subData } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .order('expires_at', { ascending: false })
+      .limit(1)
+      .single();
+    subscription = subData;
+  } catch (e: any) {
+    console.error('[Dashboard] Supabase error:', e?.message || e);
+  }
 
   // Determine active page
   const activePage = selectedPageId
     ? (pages || []).find((p) => p.id === selectedPageId) || (pages?.[0] ?? null)
     : (pages?.[0] ?? null);
 
-  // Fetch profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
-
-  // Fetch active subscription
-  const { data: subscription } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('status', 'active')
-    .order('expires_at', { ascending: false })
-    .limit(1)
-    .single();
-
   // Check if knowledge base exists
-  let hasKb = false;
   if (activePage) {
-    const { count } = await supabase
-      .from('knowledge_bases')
-      .select('*', { count: 'exact', head: true })
-      .eq('page_id', activePage.id);
-    hasKb = (count || 0) > 0;
+    try {
+      const { count } = await supabase
+        .from('knowledge_bases')
+        .select('*', { count: 'exact', head: true })
+        .eq('page_id', activePage.id);
+      hasKb = (count || 0) > 0;
+    } catch {}
   }
 
   const hasPages = (pages?.length || 0) > 0;
