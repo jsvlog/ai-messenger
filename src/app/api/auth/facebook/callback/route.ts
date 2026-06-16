@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     // Step 1: Exchange code for short-lived user token
     const appId = process.env.NEXT_PUBLIC_META_APP_ID!;
     const appSecret = process.env.META_APP_SECRET!;
-    const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/facebook/callback`;
+    const redirectUri = 'https://ai-messenger-pi.vercel.app/api/auth/facebook/callback';
 
     const tokenRes = await fetch(
       `https://graph.facebook.com/v19.0/oauth/access_token` +
