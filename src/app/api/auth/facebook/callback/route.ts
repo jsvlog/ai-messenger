@@ -33,9 +33,10 @@ export async function GET(request: NextRequest) {
     const tokenData = await tokenRes.json();
 
     if (tokenData.error) {
-      console.error('[FB Auth] Token error:', tokenData.error);
+      console.error('[FB Auth] Token error:', JSON.stringify(tokenData.error));
+      const errorMsg = tokenData.error.message || tokenData.error.type || 'unknown';
       return NextResponse.redirect(
-        new URL('/dashboard?error=fb_token', request.url).toString()
+        new URL(`/dashboard?error=${encodeURIComponent('fb_token: ' + errorMsg)}`, request.url).toString()
       );
     }
 
