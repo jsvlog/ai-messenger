@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { FacebookConnect } from '@/components/Dashboard/FacebookConnect';
+import { ManualPageConnect } from '@/components/Dashboard/ManualPageConnect';
 import { AIToggle } from '@/components/Dashboard/AIToggle';
 import { KnowledgeBaseUploader } from '@/components/Dashboard/KnowledgeBaseUploader';
 import { SchedulingConfig } from '@/components/Dashboard/SchedulingConfig';
@@ -222,6 +223,16 @@ export default async function DashboardPage({
                 userId={user.id}
                 existingPages={pages || []}
               />
+
+              {/* Manual connect fallback (for when FB OAuth page picker fails) */}
+              {(!pages || pages.length === 0) && (
+                <div className="mt-4">
+                  <ManualPageConnect
+                    userId={user.id}
+                    onSuccess={() => {}}
+                  />
+                </div>
+              )}
             </section>
 
             {/* AI Toggle */}
