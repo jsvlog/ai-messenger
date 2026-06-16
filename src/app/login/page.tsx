@@ -38,7 +38,18 @@ function LoginForm() {
       if (error) {
         setMessage(`❌ ${error.message}`);
       } else {
-        setMessage('✅ Check your email for the confirmation link!');
+        // Try to sign in immediately (works when email confirmation is disabled)
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) {
+          // Email confirmation likely required
+          setMessage('✅ Account created! Check your email for the confirmation link.');
+        } else {
+          router.push('/dashboard');
+          router.refresh();
+        }
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({
