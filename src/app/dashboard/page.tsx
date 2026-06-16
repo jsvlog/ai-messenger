@@ -253,11 +253,16 @@ export default async function DashboardPage({
                 existingPages={pages || []}
               />
 
-              {/* Manual connect — paste page token from Meta dashboard */}
+              {/* Manual connect — hidden behind toggle for power users */}
               {(!pages || pages.length === 0) && (
-                <div className="mt-4">
-                  <ManualPageConnect userId={user.id} onSuccess={() => {}} />
-                </div>
+                <details className="mt-4">
+                  <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-600">
+                    Having trouble? Connect manually →
+                  </summary>
+                  <div className="mt-3">
+                    <ManualPageConnect userId={user.id} onSuccess={() => {}} />
+                  </div>
+                </details>
               )}
             </section>
 
