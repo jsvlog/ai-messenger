@@ -21,8 +21,26 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ page?: string; success?: string; error?: string; count?: string }>;
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let supabase: any;
+  let user: any;
+
+  try {
+    supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    user = data?.user;
+  } catch (e: any) {
+    console.error('[Dashboard] Auth error:', e?.message || e);
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#fef9f0] via-[#fff5eb] to-[#fef3e6]">
+        <div className="text-center p-10 warm-card">
+          <h2 className="text-xl font-bold text-gray-800 mb-2">Unable to connect</h2>
+          <p className="text-gray-500 text-sm mb-4">The database connection failed. Please try again.</p>
+          <a href="/login" className="gradient-btn px-6 py-2 rounded-lg text-sm inline-block">Back to Login</a>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) redirect('/login');
 
   const params = await searchParams;
