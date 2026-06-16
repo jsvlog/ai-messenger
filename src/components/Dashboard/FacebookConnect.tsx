@@ -33,7 +33,7 @@ export function FacebookConnect({ userId, existingPages }: Props) {
     }
 
     const redirectUri = `${window.location.origin}/api/auth/facebook/callback`;
-    const scope = 'pages_messaging,pages_show_list,pages_read_engagement';
+    const scope = 'pages_messaging,pages_show_list';
     const url =
       `https://www.facebook.com/v19.0/dialog/oauth` +
       `?client_id=${appId}` +
