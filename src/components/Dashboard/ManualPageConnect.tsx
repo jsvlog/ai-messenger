@@ -2,10 +2,10 @@
 
 // ============================================================
 // ManualPageConnect — Paste page ID + token from Meta dashboard
+// Used as primary method since FB /me/accounts is deprecated for new apps
 // ============================================================
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 
 interface Props {
   userId: string;
@@ -19,8 +19,6 @@ export function ManualPageConnect({ userId, onSuccess }: Props) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const supabase = createClient();
-
   const handleConnect = async () => {
     if (!pageId || !pageName || !accessToken) {
       setMessage('❌ Please fill in all fields.');
@@ -30,21 +28,29 @@ export function ManualPageConnect({ userId, onSuccess }: Props) {
     setLoading(true);
     setMessage('');
 
-    const { error } = await supabase.from('connected_pages').upsert({
-      user_id: userId,
-      page_id: pageId,
-      page_name: pageName,
-      page_access_token: accessToken,
-      page_category: 'Business',
-      is_active: true,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,page_id' });
+    try {
+      // Dynamically import Supabase client to avoid SSR crashes
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
 
-    if (error) {
-      setMessage(`❌ Failed: ${error.message}`);
-    } else {
-      setMessage('✅ Page connected! Refreshing...');
-      setTimeout(() => onSuccess(), 1000);
+      const { error } = await supabase.from('connected_pages').upsert({
+        user_id: userId,
+        page_id: pageId,
+        page_name: pageName,
+        page_access_token: accessToken,
+        page_category: 'Business',
+        is_active: true,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,page_id' });
+
+      if (error) {
+        setMessage(`❌ Failed: ${error.message}`);
+      } else {
+        setMessage('✅ Page connected! Refreshing...');
+        setTimeout(() => onSuccess(), 1000);
+      }
+    } catch (e: any) {
+      setMessage(`❌ Error: ${e?.message || 'Unknown error'}`);
     }
 
     setLoading(false);
@@ -53,18 +59,19 @@ export function ManualPageConnect({ userId, onSuccess }: Props) {
   return (
     <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 space-y-3">
       <p className="text-sm font-medium text-amber-800">
-        🔧 Manual Page Connect
+        🔧 Connect Your Page
       </p>
       <p className="text-xs text-amber-600">
-        Get your Page ID and Access Token from{' '}
+        Go to{' '}
         <a
           href="https://developers.facebook.com/apps/2093101957935499/messenger"
           target="_blank"
-          rel="noopener"
-          className="underline"
+          rel="noopener noreferrer"
+          className="underline font-medium"
         >
-          Meta Dashboard → Messenger → Generate Access Tokens
+          Meta Dashboard → Messenger
         </a>
+        {' '}→ under "Generate access tokens", select your page, then copy the Page ID, name, and token below.
       </p>
 
       <input
@@ -96,7 +103,7 @@ export function ManualPageConnect({ userId, onSuccess }: Props) {
         disabled={loading}
         className="w-full py-2 rounded-lg bg-amber-600 text-white text-sm font-medium hover:bg-amber-700 transition-colors disabled:opacity-50"
       >
-        {loading ? 'Connecting...' : 'Connect Page Manually'}
+        {loading ? 'Connecting...' : 'Connect Page'}
       </button>
 
       {message && (
