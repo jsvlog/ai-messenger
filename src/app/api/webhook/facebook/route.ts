@@ -5,6 +5,7 @@
 // then kick off async AI processing via internal fetch.
 
 import { NextRequest, NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { verifyWebhook, isPageAdmin } from '@/lib/facebook';
 import { getServiceClient } from '@/lib/supabase/server';
 import type { MetaWebhookBody, MetaMessagingEvent } from '@/lib/types';
@@ -163,11 +164,13 @@ export async function POST(request: NextRequest) {
     const elapsed = Date.now() - t0;
     console.log(`[Webhook] Responding 200 OK in ${elapsed}ms`);
 
-    // Fire-and-forget: process AI responses in the background
-    // (they execute after the response is sent)
-    Promise.all(processingPromises).catch((err) => {
-      console.error('[Webhook] Background AI processing error:', err);
-    });
+    // Use waitUntil to keep the function alive for background processing
+    // (Vercel normally kills the function after response is sent)
+    waitUntil(
+      Promise.all(processingPromises).catch((err) => {
+        console.error('[Webhook] Background AI processing error:', err);
+      })
+    );
 
     return new NextResponse('EVENT_RECEIVED', { status: 200 });
   } catch (err) {
