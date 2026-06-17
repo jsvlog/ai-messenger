@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { FacebookConnect } from '@/components/Dashboard/FacebookConnect';
 // ManualPageConnect imported dynamically when needed — see JSX below
 import { AIToggle } from '@/components/Dashboard/AIToggle';
-import { KnowledgeBaseUploader } from '@/components/Dashboard/KnowledgeBaseUploader';
+import { KnowledgeBaseManager } from '@/components/Dashboard/KnowledgeBaseManager';
 import { SchedulingConfig } from '@/components/Dashboard/SchedulingConfig';
 import { SubscriptionCard } from '@/components/Dashboard/SubscriptionCard';
 import { MessageLogTable } from '@/components/Dashboard/MessageLogTable';
@@ -187,8 +187,8 @@ export default async function DashboardPage({
 
         {/* ============ MAIN GRID: Sidebar + Content ============ */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* SIDEBAR */}
-          <div className="lg:col-span-1 space-y-6">
+          {/* SIDEBAR — on mobile: below content */}
+          <div className="lg:col-span-1 space-y-6 order-2 lg:order-1">
             {/* Page Selector */}
             <section className="rounded-2xl bg-white/80 backdrop-blur-sm border border-orange-100 shadow-lg shadow-orange-100/50 p-4">
               <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
@@ -241,8 +241,8 @@ export default async function DashboardPage({
             </section>
           </div>
 
-          {/* MAIN CONTENT */}
-          <div className="lg:col-span-3 space-y-6">
+          {/* MAIN CONTENT — on mobile: first */}
+          <div className="lg:col-span-3 space-y-6 order-1 lg:order-2">
             {/* Facebook Connect */}
             <section className="rounded-2xl bg-white/80 backdrop-blur-sm border border-orange-100 shadow-lg shadow-orange-100/50 p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -288,7 +288,7 @@ export default async function DashboardPage({
                 <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                   <span className="text-xl">📚</span> Knowledge Base
                 </h3>
-                <KnowledgeBaseUploader pageId={activePage.id} />
+                <KnowledgeBaseManager pageId={activePage.id} />
               </section>
             )}
 
