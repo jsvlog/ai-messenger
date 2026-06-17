@@ -35,7 +35,7 @@ export function FacebookConnect({ userId, existingPages }: Props) {
     const redirectUri = 'https://ai-messenger-pi.vercel.app/api/auth/facebook/callback';
     const scope = 'pages_messaging,pages_show_list';
     const url =
-      `https://www.facebook.com/v19.0/dialog/oauth` +
+      `https://www.facebook.com/v25.0/dialog/oauth` +
       `?client_id=${appId}` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=${encodeURIComponent(scope)}` +

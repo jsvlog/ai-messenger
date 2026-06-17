@@ -2,7 +2,7 @@
 // Facebook (Meta) Graph API helpers
 // ============================================================
 
-const META_API_BASE = 'https://graph.facebook.com/v19.0';
+const META_API_BASE = 'https://graph.facebook.com/v25.0';
 
 /**
  * Verify a webhook challenge from Meta (GET request)
