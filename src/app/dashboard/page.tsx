@@ -15,6 +15,7 @@ import { SubscriptionCard } from '@/components/Dashboard/SubscriptionCard';
 import { MessageLogTable } from '@/components/Dashboard/MessageLogTable';
 import { PageSelector } from '@/components/Dashboard/PageSelector';
 import { OnboardingWizard } from '@/components/Dashboard/OnboardingWizard';
+import { getAnalytics, AnalyticsBar } from '@/components/Dashboard/AnalyticsPanel';
 
 export default async function DashboardPage({
   searchParams,
@@ -104,6 +105,12 @@ export default async function DashboardPage({
   const hasPages = (pages?.length || 0) > 0;
   const hasSubscription = !!subscription;
 
+  // Fetch analytics for active page
+  let analytics = { msgsToday: 0, msgsWeek: 0, responseRate: 100, leadsCaptured: 0, avgLatencyMs: 0 };
+  if (activePage) {
+    analytics = await getAnalytics(activePage.id, supabase);
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#fef9f0] via-[#fff5eb] to-[#fef3e6]">
       {/* Header */}
@@ -157,7 +164,10 @@ export default async function DashboardPage({
         </div>
       )}
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {/* Analytics Bar */}
+        {activePage && <AnalyticsBar stats={analytics} />}
+
         {/* ============ ONBOARDING WIZARD ============ */}
         {(!hasPages || !hasKb || !hasSubscription) && (
           <div className="mb-8">
