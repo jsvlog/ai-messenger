@@ -76,23 +76,27 @@ export function KnowledgeBaseUploader({ pageId }: Props) {
     setSaving(true);
     setMessage('');
 
-    const res = await fetch('/api/knowledge-base', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        pageId,
-        title: title.trim(),
-        contentMd: content.trim(),
-        contentType,
-      }),
-    });
+    try {
+      const res = await fetch('/api/knowledge-base', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pageId,
+          title: title.trim(),
+          contentMd: content.trim(),
+          contentType,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (res.ok) {
-      setMessage(`✅ Knowledge base saved! ${data.chunksCreated} chunks generated for AI search.`);
-    } else {
-      setMessage(`❌ Error: ${data.error || 'Failed to save'}`);
+      if (res.ok) {
+        setMessage(`✅ Knowledge base saved! ${data.chunksCreated || '?'} chunks generated.`);
+      } else {
+        setMessage(`❌ Error: ${data.error || 'Failed to save (status ' + res.status + ')'}`);
+      }
+    } catch (e: any) {
+      setMessage(`❌ Network error: ${e.message || 'Could not reach server'}`);
     }
 
     setSaving(false);
