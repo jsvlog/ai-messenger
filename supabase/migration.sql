@@ -362,3 +362,36 @@ CREATE TRIGGER trg_knowledge_bases_updated_at
 CREATE TRIGGER trg_subscriptions_updated_at
   BEFORE UPDATE ON public.subscriptions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ============================================================
+-- POST-MIGRATION FIXES (run if tables already exist)
+-- ============================================================
+
+-- Required for upsert operations
+ALTER TABLE public.knowledge_bases ADD CONSTRAINT IF NOT EXISTS knowledge_bases_page_id_title_unique UNIQUE (page_id, title);
+ALTER TABLE public.page_settings ADD CONSTRAINT IF NOT EXISTS page_settings_page_id_unique UNIQUE (page_id);
+
+-- Updated should_ai_respond with Philippine timezone support
+CREATE OR REPLACE FUNCTION should_ai_respond(p_page_id UUID)
+RETURNS BOOLEAN LANGUAGE plpgsql AS $$
+DECLARE
+  v_enabled BOOLEAN; v_paused_until TIMESTAMPTZ; v_schedule BOOLEAN;
+  v_start TIME; v_end TIME; v_days INTEGER[]; v_now_ph TIME;
+BEGIN
+  SELECT ps.ai_enabled, ps.ai_paused_until, ps.schedule_active,
+    ps.schedule_start, ps.schedule_end, ps.schedule_days
+  INTO v_enabled, v_paused_until, v_schedule, v_start, v_end, v_days
+  FROM public.page_settings ps WHERE ps.page_id = p_page_id;
+  IF v_enabled IS NULL THEN RETURN true; END IF;
+  IF NOT v_enabled THEN RETURN false; END IF;
+  IF v_paused_until IS NOT NULL AND v_paused_until > now() THEN RETURN false; END IF;
+  IF v_schedule THEN
+    v_now_ph := (now() AT TIME ZONE 'Asia/Manila')::time;
+    IF NOT (EXTRACT(DOW FROM now() AT TIME ZONE 'Asia/Manila')::INT + 1 = ANY(v_days)) THEN RETURN false; END IF;
+    IF v_start IS NOT NULL AND v_end IS NOT NULL THEN
+      IF v_now_ph < v_start OR v_now_ph > v_end THEN RETURN false; END IF;
+    END IF;
+  END IF;
+  RETURN true;
+END;
+$$;
