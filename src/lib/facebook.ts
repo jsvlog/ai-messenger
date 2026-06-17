@@ -121,14 +121,20 @@ export async function getUserPages(
   userAccessToken: string
 ): Promise<{ pages: { id: string; name: string; category: string; access_token: string }[]; rawResponse: string }> {
   try {
-    const url = `${META_API_BASE}/me/accounts?access_token=${userAccessToken}&fields=id,name,category,access_token&limit=100`;
+    // Get user ID first
+    const meRes = await fetch(`${META_API_BASE}/me?access_token=${userAccessToken}&fields=id`);
+    const meData = await meRes.json();
+    const userId = meData.id || 'me';
+
+    // Try with actual user ID
+    const url = `${META_API_BASE}/${userId}/accounts?access_token=${userAccessToken}&fields=id,name,category,access_token&limit=100`;
     const res = await fetch(url);
     const data = await res.json();
     const raw = JSON.stringify(data);
 
     // If empty, try alternate endpoint syntax
     if (!data.error && (!data.data || data.data.length === 0)) {
-      const altUrl = `${META_API_BASE}/me?fields=accounts{id,name,category,access_token}&access_token=${userAccessToken}`;
+      const altUrl = `${META_API_BASE}/${userId}?fields=accounts{id,name,category,access_token}&access_token=${userAccessToken}`;
       const altRes = await fetch(altUrl);
       const altData = await altRes.json();
       if (altData.accounts?.data?.length > 0) {
