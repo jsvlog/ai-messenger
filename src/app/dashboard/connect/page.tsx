@@ -21,14 +21,18 @@ export default function ConnectPage() {
     try {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not logged in');
+
       const { error } = await supabase.from('connected_pages').upsert({
+        user_id: user.id,
         page_id: pageId,
         page_name: pageName,
         page_access_token: accessToken,
         page_category: 'Business',
         is_active: true,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'page_id' });
+      }, { onConflict: 'user_id,page_id' });
 
       if (error) throw error;
       setMessage('✅ Connected! Redirecting...');
