@@ -107,8 +107,10 @@ export default async function DashboardPage({
 
   // Fetch analytics for active page
   let analytics = { msgsToday: 0, msgsWeek: 0, responseRate: 100, leadsCaptured: 0, avgLatencyMs: 0 };
+  let dailyMsgCount = 0;
   if (activePage) {
     analytics = await getAnalytics(activePage.id, supabase);
+    dailyMsgCount = analytics.msgsToday;
   }
 
   return (
@@ -217,6 +219,7 @@ export default async function DashboardPage({
               <SubscriptionCard
                 currentPlan={profile?.plan || 'free'}
                 subscription={subscription}
+                dailyMsgCount={dailyMsgCount}
               />
             </section>
 
