@@ -5,7 +5,6 @@
 // ============================================================
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 
 interface Props {
   pageId: string;
@@ -61,8 +60,6 @@ export function KnowledgeBaseUploader({ pageId }: Props) {
   const [contentType, setContentType] = useState('general');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-
-  const supabase = createClient();
 
   const handleTemplate = (type: string) => {
     setContentType(type);
