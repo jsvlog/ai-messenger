@@ -9,10 +9,10 @@ export function LandingFooter() {
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ff6b6b] to-[#ffa94d] flex items-center justify-center text-white font-bold text-xs shadow-sm">AI</div>
-              <span className="font-bold text-gray-800">AI Messenger</span>
+              <span className="font-bold text-gray-800">CaterAI</span>
             </div>
             <p className="text-xs text-gray-400 leading-relaxed max-w-xs">
-              Smart auto-replies for Filipino businesses. Built for Rentals & Catering.
+              AI auto-reply built specifically for Filipino caterers. Never miss a booking.
             </p>
           </div>
 

@@ -8,7 +8,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Leads Dashboard — AI Messenger',
+  title: 'Event Inquiries — CaterAI',
   description: 'View and export all captured leads from your Facebook Messenger conversations.',
 };
 
@@ -67,7 +67,7 @@ export default async function LeadsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#ff6b6b] to-[#ffa94d] flex items-center justify-center text-white font-bold text-sm shadow-md">AI</div>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-[#ff6b6b] to-[#ffa94d] bg-clip-text text-transparent">AI Messenger</h1>
+            <h1 className="text-lg font-bold bg-gradient-to-r from-[#ff6b6b] to-[#ffa94d] bg-clip-text text-transparent">CaterAI</h1>
           </Link>
           <Link href="/dashboard" className="text-sm text-gray-500 hover:text-[#ff6b6b]">← Dashboard</Link>
         </div>

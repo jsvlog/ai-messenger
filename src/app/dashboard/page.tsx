@@ -124,7 +124,7 @@ export default async function DashboardPage({
             </div>
             <div>
               <h1 className="text-lg font-bold bg-gradient-to-r from-[#ff6b6b] to-[#ffa94d] bg-clip-text text-transparent">
-                AI Messenger
+                CaterAI
               </h1>
               <p className="text-xs text-gray-500">
                 {profile?.full_name || user.email}
