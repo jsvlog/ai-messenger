@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b6b"/>
+      <stop offset="100%" style="stop-color:#ffa94d"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="180" fill="url(#bg)"/>
+  <!-- AI text -->
+  <text x="512" y="620" font-family="system-ui,-apple-system,sans-serif" font-size="420" font-weight="900" fill="white" text-anchor="middle" letter-spacing="-10">AI</text>
+  <!-- Subtle glow -->
+  <circle cx="300" cy="300" r="200" fill="white" opacity="0.08"/>
+</svg>
