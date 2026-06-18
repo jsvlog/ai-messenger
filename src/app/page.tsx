@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { LandingNav } from '@/components/Landing/LandingNav';
-import { LandingFooter } from '@/components/Landing/LandingFooter';
+import { LandingNav } from '@/components/landing/LandingNav';
+import { LandingFooter } from '@/components/landing/LandingFooter';
 
 export default function HomePage() {
   return (
