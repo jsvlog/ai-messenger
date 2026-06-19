@@ -42,8 +42,9 @@ const PLANS = [
     id: 'starter',
     name: 'Starter',
     priceMonthly: '₱499',
-    priceAnnually: null,
+    priceAnnually: '₱3,999',
     periodMonthly: '/month',
+    periodAnnually: '/year',
     originalMonthly: '₱749',
     desc: 'Best for growing businesses',
     cta: 'Start Monthly',
@@ -243,16 +244,24 @@ export default function PricingPage() {
                   >
                     {loading === plan.id + (isAnnual ? '-annual' : '-monthly')
                       ? 'Redirecting...'
-                      : plan.cta}
+                      : plan.id === 'free'
+                        ? plan.cta
+                        : isAnnual
+                          ? 'Start Annually'
+                          : 'Start Monthly'}
                   </button>
 
-                  {/* Annual upsell for Pro on monthly view */}
-                  {plan.id === 'pro' && billing === 'monthly' && (
+                  {/* Annual upsell on monthly view */}
+                  {billing === 'monthly' && plan.priceAnnually && plan.id !== 'free' && (
                     <button
                       onClick={() => { setBilling('annually'); }}
                       className="w-full py-2 rounded-xl text-xs text-green-600 font-medium hover:bg-green-50 transition-colors"
                     >
-                      💡 Save ₱3,989 with annual billing
+                      {plan.id === 'pro'
+                        ? '💡 Save ₱3,989 with annual billing'
+                        : plan.id === 'starter'
+                          ? '💡 Save ₱1,989 with annual billing'
+                          : `💡 Save with annual billing`}
                     </button>
                   )}
                 </div>
@@ -325,5 +334,5 @@ const COMPARISON_ROWS = [
   { feature: 'Support', free: 'Standard', starter: 'Email', pro: 'Priority + Viber' },
   { feature: 'Early Access Features', free: '✗', starter: '✗', pro: '✓' },
   { feature: 'Price (Monthly)', free: '₱0', starter: '₱499', pro: '₱999' },
-  { feature: 'Annual Price', free: '₱0', starter: '—', pro: '₱7,999/yr (₱667/mo)' },
+  { feature: 'Annual Price', free: '₱0', starter: '₱3,999/yr (₱333/mo)', pro: '₱7,999/yr (₱667/mo)' },
 ];

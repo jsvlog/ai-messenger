@@ -1,7 +1,7 @@
 // ============================================================
 // Lemon Squeezy Checkout Route
-// Plans: starter (₱499/mo), pro (₱999/mo), pro-annual (₱7,999/yr)
-// ============================================================
+// Lemon Squeezy Checkout Route
+// Plans: starter (₱499/mo), pro (₱999/mo), starter-annual (₱3,999/yr), pro-annual (₱7,999/yr)
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
@@ -16,14 +16,15 @@ export async function GET(request: NextRequest) {
   }
 
   const searchParams = request.nextUrl.searchParams;
-  const plan = searchParams.get('plan'); // 'starter' | 'pro' | 'pro-annual'
+  const plan = searchParams.get('plan'); // 'starter' | 'pro' | 'starter-annual' | 'pro-annual'
 
-  // Map plan to Lemon Squeezy variant ID
+  // Map plan to Lemon Squeezy variant ID from env
   const variantMap: Record<string, string> = {
-    'starter': process.env.LEMON_SQUEEZY_VARIANT_STARTER || '',
-    'pro': process.env.LEMON_SQUEEZY_VARIANT_PRO || '',
+    'starter': process.env.LEMON_SQUEEZY_VARIANT_STARTER || process.env.LEMON_SQUEEZY_VARIANT_2W || '',
+    'pro': process.env.LEMON_SQUEEZY_VARIANT_PRO || process.env.LEMON_SQUEEZY_VARIANT_12W || '',
+    'starter-annual': process.env.LEMON_SQUEEZY_VARIANT_STARTER_ANNUAL || '',
     'pro-annual': process.env.LEMON_SQUEEZY_VARIANT_PRO_ANNUAL || '',
-    // Backward compat — keep old mappings until LS variants are updated
+    // Backward compat
     '2week': process.env.LEMON_SQUEEZY_VARIANT_STARTER || process.env.LEMON_SQUEEZY_VARIANT_2W || '',
     '4week': process.env.LEMON_SQUEEZY_VARIANT_STARTER || process.env.LEMON_SQUEEZY_VARIANT_4W || '',
     '12week': process.env.LEMON_SQUEEZY_VARIANT_PRO || process.env.LEMON_SQUEEZY_VARIANT_12W || '',
@@ -31,7 +32,8 @@ export async function GET(request: NextRequest) {
 
   const variantId = variantMap[plan];
   if (!variantId) {
-    return NextResponse.json({ error: `Invalid plan: ${plan}` }, { status: 400 });
+    console.error(`[Checkout] No variant ID for plan "${plan}". Env vars set: STARTER=${!!process.env.LEMON_SQUEEZY_VARIANT_STARTER}, PRO=${!!process.env.LEMON_SQUEEZY_VARIANT_PRO}, STARTER_ANNUAL=${!!process.env.LEMON_SQUEEZY_VARIANT_STARTER_ANNUAL}, PRO_ANNUAL=${!!process.env.LEMON_SQUEEZY_VARIANT_PRO_ANNUAL}`);
+    return NextResponse.json({ error: `Plan "${plan}" is not available yet. Please try again or contact support.` }, { status: 400 });
   }
 
   // Get user email

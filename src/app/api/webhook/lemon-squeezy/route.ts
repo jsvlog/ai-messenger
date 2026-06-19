@@ -36,12 +36,14 @@ export async function POST(request: NextRequest) {
         // Determine plan name from variant
         let planName = 'starter';
         const STARTER = process.env.LEMON_SQUEEZY_VARIANT_STARTER || process.env.LEMON_SQUEEZY_VARIANT_2W;
+        const STARTER_ANNUAL = process.env.LEMON_SQUEEZY_VARIANT_STARTER_ANNUAL;
         const PRO = process.env.LEMON_SQUEEZY_VARIANT_PRO || process.env.LEMON_SQUEEZY_VARIANT_12W;
         const PRO_ANNUAL = process.env.LEMON_SQUEEZY_VARIANT_PRO_ANNUAL;
 
         if (variantId === PRO) planName = 'pro';
         else if (variantId === PRO_ANNUAL) planName = 'pro-annual';
         else if (variantId === STARTER) planName = 'starter';
+        else if (variantId === STARTER_ANNUAL) planName = 'starter-annual';
         // backward compat
         else if (variantId === process.env.LEMON_SQUEEZY_VARIANT_4W) planName = 'starter';
 
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Update profile plan
-        const profilePlan = planName === 'pro-annual' ? 'pro' : planName;
+        const profilePlan = planName === 'pro-annual' ? 'pro' : planName === 'starter-annual' ? 'starter' : planName;
         await supabase
           .from('profiles')
           .update({ plan: profilePlan, updated_at: new Date().toISOString() })

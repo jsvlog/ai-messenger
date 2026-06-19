@@ -20,7 +20,7 @@ export async function createCheckout(params: LSCheckoutParams): Promise<string |
   const storeId = process.env.LEMON_SQUEEZY_STORE_ID;
 
   if (!apiKey || !storeId) {
-    console.error('[LS] Missing API key or store ID');
+    console.error('[LS] Missing API key or store ID — set LEMON_SQUEEZY_API_KEY and LEMON_SQUEEZY_STORE_ID in Vercel env vars');
     return null;
   }
 
@@ -114,11 +114,11 @@ export function getPlanExpiry(variantId: string): Date {
   const now = new Date();
   const days30 = 30 * 24 * 60 * 60 * 1000;
   const days365 = 365 * 24 * 60 * 60 * 1000;
-  const days14 = 14 * 24 * 60 * 60 * 1000;
 
   const PRO_ANNUAL = process.env.LEMON_SQUEEZY_VARIANT_PRO_ANNUAL;
+  const STARTER_ANNUAL = process.env.LEMON_SQUEEZY_VARIANT_STARTER_ANNUAL;
 
-  if (variantId === PRO_ANNUAL) {
+  if (variantId === PRO_ANNUAL || variantId === STARTER_ANNUAL) {
     return new Date(now.getTime() + days365);
   }
 
@@ -131,10 +131,14 @@ export function getPlanExpiry(variantId: string): Date {
  */
 export function getPlanDetails(variantId: string): { name: string; period: string } {
   const PRO_ANNUAL = process.env.LEMON_SQUEEZY_VARIANT_PRO_ANNUAL;
-  if (variantId === PRO_ANNUAL) return { name: 'Pro Annual', period: '12 months' };
-
+  const STARTER_ANNUAL = process.env.LEMON_SQUEEZY_VARIANT_STARTER_ANNUAL;
   const PRO = process.env.LEMON_SQUEEZY_VARIANT_PRO;
+  const STARTER = process.env.LEMON_SQUEEZY_VARIANT_STARTER;
+
+  if (variantId === PRO_ANNUAL) return { name: 'Pro Annual', period: '12 months' };
+  if (variantId === STARTER_ANNUAL) return { name: 'Starter Annual', period: '12 months' };
   if (variantId === PRO) return { name: 'Pro', period: '1 month' };
+  if (variantId === STARTER) return { name: 'Starter', period: '1 month' };
 
   return { name: 'Starter', period: '1 month' };
 }
