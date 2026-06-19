@@ -52,7 +52,13 @@ export async function GET(request: NextRequest) {
   });
 
   if (!checkoutUrl) {
-    return NextResponse.json({ error: 'Failed to create checkout' }, { status: 500 });
+    // Diagnostic: check what's configured
+    const hasApiKey = !!process.env.LEMON_SQUEEZY_API_KEY;
+    const hasStoreId = !!process.env.LEMON_SQUEEZY_STORE_ID;
+    return NextResponse.json({
+      error: 'Failed to create checkout',
+      debug: { hasApiKey, hasStoreId, variantId, plan }
+    }, { status: 500 });
   }
 
   return NextResponse.redirect(checkoutUrl);

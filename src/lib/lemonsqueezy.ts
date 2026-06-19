@@ -72,11 +72,17 @@ export async function createCheckout(params: LSCheckoutParams): Promise<string |
     const data = await res.json();
 
     if (data.errors) {
-      console.error('[LS] Checkout error:', data.errors);
+      console.error('[LS] Checkout error — API response:', JSON.stringify(data.errors, null, 2).slice(0, 500));
       return null;
     }
 
-    return data.data?.attributes?.url || null;
+    const checkoutUrl = data.data?.attributes?.url;
+    if (!checkoutUrl) {
+      console.error('[LS] No checkout URL in response:', JSON.stringify(data).slice(0, 300));
+      return null;
+    }
+
+    return checkoutUrl;
   } catch (err) {
     console.error('[LS] Checkout creation failed:', err);
     return null;
