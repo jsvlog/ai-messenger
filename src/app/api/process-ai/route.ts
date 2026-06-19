@@ -200,12 +200,28 @@ export async function POST(request: NextRequest) {
     const greeting = senderName ? `${senderName}, ` : '';
     const userMessageForAI = `${greeting}Customer message: "${message_text}"`;
 
+    // Determine industry from KB content_type
+    let industryType: 'rentals' | 'catering' | 'general' = 'general';
+    if (kbData && kbData.length > 0) {
+      const ct = kbData[0].content_type || '';
+      if (ct.includes('catering')) industryType = 'catering';
+      else if (ct.includes('rentals')) industryType = 'rentals';
+      else if (ct.includes('salon') || ct.includes('clinic') || ct.includes('photography') || ct.includes('realestate')) industryType = 'general';
+      // Try to read from stored JSON
+      try {
+        const parsed = JSON.parse(kbData[0].content_md);
+        if (parsed.industryId) {
+          industryType = (['catering', 'rentals', 'general'].includes(parsed.industryId) ? parsed.industryId : 'general') as any;
+        }
+      } catch {}
+    }
+
     const systemPrompt = buildTaglishPrompt(
       matchedChunks,
       updatedLeadInfo,
       chatHistory,
       page_name,
-      'general'
+      industryType
     );
 
     const aiResult = await callOpenRouter(systemPrompt, userMessageForAI);

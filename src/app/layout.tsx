@@ -3,11 +3,11 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: 'CaterAI — AI Auto-Reply for Filipino Catering Businesses',
+    default: 'CaterAI — AI Auto-Reply for Filipino Businesses',
     template: '%s — CaterAI',
   },
   description:
-    'Never miss a catering inquiry again. CaterAI auto-replies to your Facebook Messenger in warm Taglish, captures event details (date, pax, venue, budget), and books events while you\'re in the kitchen. Built specifically for Filipino caterers.',
+    'Never miss a customer inquiry again. CaterAI auto-replies to your Facebook Messenger in warm Taglish, captures leads, and books customers 24/7. Built for Filipino businesses — catering, rentals, salons, clinics, and more.',
   keywords: [
     'catering ai',
     'catering chatbot',
