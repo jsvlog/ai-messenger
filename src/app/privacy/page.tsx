@@ -3,7 +3,7 @@ import { LandingNav } from '@/components/landing/LandingNav';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — CaterAI',
+  title: 'Privacy Policy',
   description: 'How CaterAI collects, uses, and protects your data.',
 };
 

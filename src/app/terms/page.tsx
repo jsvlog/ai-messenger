@@ -3,7 +3,7 @@ import { LandingNav } from '@/components/landing/LandingNav';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 
 export const metadata: Metadata = {
-  title: 'Terms of Service — CaterAI',
+  title: 'Terms of Service',
   description: 'Terms and conditions for using CaterAI.',
 };
 
