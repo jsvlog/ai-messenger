@@ -8,7 +8,7 @@ import { getIndustry } from './industries';
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DEFAULT_MODEL = 'google/gemini-2.5-flash'; // Cheap, fast, good Taglish (live successor to 2.0-flash)
 const FALLBACK_MODEL = 'openai/gpt-4o-mini';
-const APP_NAME = 'CaterAI';
+const APP_NAME = 'AI Messenger';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-messenger-pi.vercel.app';
 
 /**

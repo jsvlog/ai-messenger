@@ -1,6 +1,6 @@
 // ============================================================
 // Industry Config — Tailored KB fields, AI prompts, lead capture per business type
-// This is the brain that makes CaterAI industry-aware.
+// This is the brain that makes AI Messenger industry-aware.
 // ============================================================
 
 export interface IndustryField {

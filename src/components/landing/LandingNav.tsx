@@ -13,7 +13,7 @@ export function LandingNav() {
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#ff6b6b] to-[#ffa94d] flex items-center justify-center text-white font-bold text-sm shadow-md shadow-orange-300/30">
             AI
           </div>
-          <span className="font-bold text-gray-800 text-lg">CaterAI</span>
+          <span className="font-bold text-gray-800 text-lg">AI Messenger</span>
         </Link>
 
         {/* Desktop links */}

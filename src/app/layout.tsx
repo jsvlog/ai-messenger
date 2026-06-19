@@ -4,11 +4,11 @@ import { WebsiteAssistant } from '@/components/WebsiteAssistant';
 
 export const metadata: Metadata = {
   title: {
-    default: 'CaterAI — AI Auto-Reply for Filipino Businesses',
-    template: '%s — CaterAI',
+    default: 'AI Messenger — AI Auto-Reply for Filipino Businesses',
+    template: '%s — AI Messenger',
   },
   description:
-    'Never miss a customer inquiry again. CaterAI auto-replies to your Facebook Messenger in warm Taglish, captures leads, and books customers 24/7. Built for Filipino businesses — catering, rentals, salons, clinics, and more.',
+    'Never miss a customer inquiry again. AI Messenger auto-replies to your Facebook Messenger in warm Taglish, captures leads, and books customers 24/7. Built for Filipino businesses — catering, rentals, salons, clinics, and more.',
   keywords: [
     'catering ai',
     'catering chatbot',
@@ -20,16 +20,16 @@ export const metadata: Metadata = {
     'facebook page auto reply catering',
     'event booking ai',
   ],
-  authors: [{ name: 'CaterAI' }],
-  creator: 'CaterAI',
-  publisher: 'CaterAI',
+  authors: [{ name: 'AI Messenger' }],
+  creator: 'AI Messenger',
+  publisher: 'AI Messenger',
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://ai-messenger-pi.vercel.app'),
   openGraph: {
     type: 'website',
     locale: 'en_PH',
     url: '/',
-    siteName: 'CaterAI',
-    title: 'CaterAI — AI Auto-Reply for Filipino Catering Businesses',
+    siteName: 'AI Messenger',
+    title: 'AI Messenger — AI Auto-Reply for Filipino Catering Businesses',
     description:
       'Never miss a catering inquiry. AI replies in Taglish, captures date/pax/venue/budget, books events 24/7.',
     images: [
@@ -37,13 +37,13 @@ export const metadata: Metadata = {
         url: '/og-image.svg',
         width: 1200,
         height: 630,
-        alt: 'CaterAI — AI Auto-Reply for Filipino Catering Businesses',
+        alt: 'AI Messenger — AI Auto-Reply for Filipino Catering Businesses',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'CaterAI — AI Auto-Reply for Filipino Caterers',
+    title: 'AI Messenger — AI Auto-Reply for Filipino Caterers',
     description:
       'Never miss a catering inquiry. AI replies in Taglish, captures event details, books events 24/7.',
     images: ['/og-image.svg'],

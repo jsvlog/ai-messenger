@@ -20,7 +20,7 @@ export default function HomePage() {
             {' '}again
           </h1>
           <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto mb-8 leading-relaxed">
-            CaterAI auto-replies to your Facebook Messenger in warm Taglish — captures leads, answers questions,
+            AI Messenger auto-replies to your Facebook Messenger in warm Taglish — captures leads, answers questions,
             and books customers 24/7. Built for Filipino businesses of all kinds.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -119,7 +119,7 @@ export default function HomePage() {
             {[
               { step: '1', title: 'Connect your Facebook Page', desc: 'One click. Pick the page where customers message you.' },
               { step: '2', title: 'Add your business info', desc: 'Fill in a simple form — pick your industry, add your products/services, prices, and policies. No technical stuff.' },
-              { step: '3', title: 'Turn it on & relax', desc: 'CaterAI starts replying immediately. Check your dashboard for captured leads and customer details.' },
+              { step: '3', title: 'Turn it on & relax', desc: 'AI Messenger starts replying immediately. Check your dashboard for captured leads and customer details.' },
             ].map((s) => (
               <div key={s.step} className="flex gap-4 items-start">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#ff6b6b] to-[#ffa94d] text-white font-bold flex items-center justify-center flex-shrink-0">{s.step}</div>

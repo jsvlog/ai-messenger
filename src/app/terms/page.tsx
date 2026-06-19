@@ -4,7 +4,7 @@ import { LandingFooter } from '@/components/landing/LandingFooter';
 
 export const metadata: Metadata = {
   title: 'Terms of Service',
-  description: 'Terms and conditions for using CaterAI.',
+  description: 'Terms and conditions for using AI Messenger.',
 };
 
 export default function TermsPage() {
@@ -19,7 +19,7 @@ export default function TermsPage() {
           <div className="space-y-8 text-gray-700 leading-relaxed">
             <Section title="1. Acceptance of Terms">
               <p className="text-sm text-gray-600">
-                By accessing or using CaterAI (&ldquo;the Service&rdquo;), you agree to be bound by these Terms of Service.
+                By accessing or using AI Messenger (&ldquo;the Service&rdquo;), you agree to be bound by these Terms of Service.
                 If you do not agree, do not use the Service. We reserve the right to update these terms at any time.
                 Continued use after changes constitutes acceptance.
               </p>
@@ -27,7 +27,7 @@ export default function TermsPage() {
 
             <Section title="2. Description of Service">
               <p className="text-sm text-gray-600">
-                CaterAI provides an AI-powered auto-reply service for Facebook Messenger.
+                AI Messenger provides an AI-powered auto-reply service for Facebook Messenger.
                 The Service reads incoming messages to your connected Facebook Page, generates responses
                 using artificial intelligence, and sends replies automatically. The Service also captures
                 lead information from conversations for your review.
@@ -75,7 +75,7 @@ export default function TermsPage() {
 
             <Section title="7. Limitation of Liability">
               <p className="text-sm text-gray-600">
-                CaterAI is provided &ldquo;as is&rdquo; without warranties of any kind. We are not liable
+                AI Messenger is provided &ldquo;as is&rdquo; without warranties of any kind. We are not liable
                 for any damages arising from the use of the Service, including but not limited to
                 lost revenue, missed leads, or inaccurate AI responses. Our total liability is
                 limited to the amount you paid us in the last 3 months.
@@ -93,7 +93,7 @@ export default function TermsPage() {
               <p className="text-sm text-gray-600">
                 Questions about these terms? Contact us at:
                 <br />
-                <strong>Email:</strong> support@caterai.ph
+                <strong>Email:</strong> support@aimessenger.ph
               </p>
             </Section>
           </div>

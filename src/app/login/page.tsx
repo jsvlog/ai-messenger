@@ -90,7 +90,7 @@ function LoginForm() {
             AI
           </div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-[#ff6b6b] to-[#ffa94d] bg-clip-text text-transparent">
-            CaterAI
+            AI Messenger
           </h1>
           <p className="text-sm text-gray-500 mt-1">
             Smart auto-replies for your Facebook page

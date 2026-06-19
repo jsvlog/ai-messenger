@@ -1,7 +1,7 @@
 'use client';
 
 // ============================================================
-// WebsiteAssistant — Floating chat bubble for CaterAI website
+// WebsiteAssistant — Floating chat bubble for AI Messenger website
 // Doubles as a live demo of the product
 // ============================================================
 
@@ -13,7 +13,7 @@ interface Message {
 }
 
 const SUGGESTED_QUESTIONS = [
-  'Magkano ang CaterAI?',
+  'Magkano ang AI Messenger?',
   'Paano mag-connect ng FB page?',
   'Anong businesses ang supported?',
   'Free ba talaga?',
@@ -22,7 +22,7 @@ const SUGGESTED_QUESTIONS = [
 export function WebsiteAssistant() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Hi po! 👋 Ako si CaterAI Assistant. Pwede ko po kayong tulungan sa questions niyo about CaterAI. Ano po ang gusto niyong malaman?' }
+    { role: 'assistant', content: 'Hi po! 👋 Ako si AI Messenger Assistant. Pwede ko po kayong tulungan sa questions niyo about AI Messenger. Ano po ang gusto niyong malaman?' }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -102,7 +102,7 @@ export function WebsiteAssistant() {
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-white font-bold text-sm">AI</div>
           <div>
-            <p className="text-white font-semibold text-sm">CaterAI Assistant</p>
+            <p className="text-white font-semibold text-sm">AI Messenger Assistant</p>
             <p className="text-white/70 text-[10px] flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" /> Online now
             </p>
@@ -175,7 +175,7 @@ export function WebsiteAssistant() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
           </button>
         </div>
-        <p className="text-[9px] text-gray-300 text-center mt-1.5">Powered by CaterAI — this is how your AI replies to customers too! 🚀</p>
+        <p className="text-[9px] text-gray-300 text-center mt-1.5">Powered by AI Messenger — this is how your AI replies to customers too! 🚀</p>
       </div>
     </div>
   );
