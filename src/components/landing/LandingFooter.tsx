@@ -41,13 +41,13 @@ export function LandingFooter() {
             <h4 className="font-semibold text-gray-800 text-sm mb-3">Contact</h4>
             <div className="space-y-2">
               <span className="block text-xs text-gray-400">🇵🇭 Philippines</span>
-              <span className="block text-xs text-gray-400">support@aimessenger.ph</span>
+              <span className="block text-xs text-gray-400">support@caterai.ph</span>
             </div>
           </div>
         </div>
 
         <div className="border-t border-orange-100 mt-8 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3">
-          <p className="text-xs text-gray-400">© {new Date().getFullYear()} AI Messenger. All rights reserved.</p>
+          <p className="text-xs text-gray-400">© {new Date().getFullYear()} CaterAI. All rights reserved.</p>
           <div className="flex gap-4 text-xs text-gray-400">
             <Link href="/privacy" className="hover:text-[#ff6b6b] transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-[#ff6b6b] transition-colors">Terms of Service</Link>

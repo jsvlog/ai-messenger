@@ -3,8 +3,8 @@ import { LandingNav } from '@/components/landing/LandingNav';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy — AI Messenger',
-  description: 'How AI Messenger collects, uses, and protects your data.',
+  title: 'Privacy Policy — CaterAI',
+  description: 'How CaterAI collects, uses, and protects your data.',
 };
 
 export default function PrivacyPage() {
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
 
           <div className="space-y-8 text-gray-700 leading-relaxed">
             <Section title="1. Information We Collect">
-              <p>When you use AI Messenger, we collect:</p>
+              <p>When you use CaterAI, we collect:</p>
               <ul className="list-disc pl-5 mt-2 space-y-1 text-sm text-gray-600">
                 <li><strong>Account Information:</strong> Your name, email address, and profile picture when you sign up via email or Google.</li>
                 <li><strong>Facebook Page Data:</strong> When you connect your Facebook Page, we access your Page name, category, and Messenger conversations. We use this solely to provide the AI auto-reply service.</li>
@@ -80,7 +80,7 @@ export default function PrivacyPage() {
               <p className="text-sm text-gray-600">
                 If you have questions about this Privacy Policy, contact us at:
                 <br />
-                <strong>Email:</strong> support@aimessenger.ph
+                <strong>Email:</strong> support@caterai.ph
                 <br />
                 <strong>Location:</strong> Philippines
               </p>

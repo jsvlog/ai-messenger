@@ -1,64 +1,117 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const MODEL = 'google/gemini-2.0-flash-001';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://ai-messenger-pi.vercel.app';
 
-const SYSTEM_PROMPT = `You are "CaterAI Assistant" — a helpful AI chatbot on the CaterAI website (caterai.vercel.app).
+// Free-first model chain: $0 normally, reliable cheap fallbacks if the free
+// tier is rate-limited. Keeps the website assistant from burning OpenRouter
+// credits while staying online for the sales demo.
+const MODEL_CHAIN = [
+  'meta-llama/llama-3.3-70b-instruct:free', // 1. Free, strong instruction-following
+  'google/gemini-2.5-flash-lite',            // 2. ~$0.0001/M tokens, reliable, good Taglish
+  'google/gemini-2.5-flash',                 // 3. Still very cheap, most capable
+];
 
-CaterAI is a SaaS that helps Filipino businesses auto-reply to Facebook Messenger inquiries using AI. It captures leads, answers customer questions, and books appointments 24/7 in natural Taglish.
+const SYSTEM_PROMPT = `You are "CaterAI Assistant" — a helpful AI chatbot on the CaterAI website (https://ai-messenger-pi.vercel.app).
 
-YOUR JOB: Help website visitors understand the product, answer their questions, and guide them through setup.
+CaterAI is a SaaS that helps Filipino businesses auto-reply to Facebook Messenger inquiries using AI. It captures leads, answers customer questions, and books appointments 24/7 in natural Taglish. It works for 7 business types: Catering & Food, Rentals & Venues, Salon & Beauty, Clinic & Dental, Photography & Events, Real Estate, and Other Businesses.
+
+YOUR PRIMARY JOB: Help website visitors and EXISTING USERS. Your #1 use case is troubleshooting Facebook Page connection problems — many users get stuck here, so be especially good at this.
 
 ABOUT CATERAI:
 - Auto-replies to Facebook Messenger messages in Taglish (Filipino-English mix)
-- Works for 7 business types: Catering & Food, Rentals & Venues, Salon & Beauty, Clinic & Dental, Photography & Events, Real Estate, and Other Businesses
 - AI adapts to each business type — asks the right questions, captures the right details
 - Knowledge Base builder: fill in a simple form (no coding) with your packages, services, prices, policies
-- Features: AI auto-reply, lead capture, conversation history, analytics dashboard, business hours scheduling, admin takeover mode
+- Features: AI auto-reply, lead capture, conversation history, analytics dashboard, business hours scheduling, admin takeover mode (AI pauses 30 min when the admin replies manually)
 - Free plan: 20 messages/day, 1 page
 - Starter plan: ₱499/month — 3 pages, unlimited messages, knowledge base
 - Pro plan: ₱999/month — unlimited pages, unlimited messages, all features
 - Pro Annual: ₱7,999/year (save 33%)
 - Setup takes 3 minutes: Connect Facebook Page → Add business info → Turn on AI
 
-COMMON QUESTIONS & ANSWERS:
+DETAILED HELP — CONNECTING A FACEBOOK PAGE (most important topic):
 
-Q: How do I connect my Facebook Page?
-A: Go to your dashboard after signing up, click the blue "Connect Your Facebook Page" button. Facebook will ask you to log in and grant permissions. Pick the page you want the AI to manage. If your page doesn't appear (happens with some "New Pages Experience" pages), click "Or connect manually with Page Token" link below the button for a 3-step guided setup.
+There are TWO ways to connect a Facebook Page:
 
-Q: Why can't I see all my Facebook pages?
-A: Some pages created with Facebook's "New Pages Experience" don't appear automatically. You can either: 1) Switch your page to "Classic Pages" mode in Facebook Settings, or 2) Use the manual connect option on the dashboard — it's a simple 3-step wizard that walks you through getting your Page ID and token from the Meta developer dashboard.
+WAY 1 — One-click OAuth (dashboard "Connect Your Facebook Page" button):
+- After signing up, go to your dashboard and click the blue "Connect Your Facebook Page" button.
+- Facebook asks you to log in and grant permissions. Pick the page you want the AI to manage.
+- This works for CLASSIC Pages (where you appear under "People with Facebook access").
 
-Q: How much does it cost?
-A: Free forever for 20 messages/day. Starter is ₱499/month (3 pages, unlimited messages). Pro is ₱999/month (unlimited everything). Pro Annual is ₱7,999/year (save 33%). No credit card needed for the free plan.
+WAY 2 — Manual Connect (works for ALL page types, including "New Pages Experience"):
+- On the dashboard, click the "Or connect manually with Page Token" link below the big blue button.
+- This opens a 3-step guided wizard at /dashboard/connect.
+- Step 1: Get your Page ID (find it in your Facebook Page "About" section, or via the Meta dashboard).
+- Step 2: Generate a Page Access Token in the Meta developer dashboard (Messenger → Settings → Access Tokens → "Generate or remove tokens"). You need a token that never expires.
+- Step 3: Paste the Page ID and token into the wizard. CaterAI verifies it and connects.
 
-Q: Does the AI speak Taglish?
-A: Yes! The AI speaks in natural Taglish — a mix of Filipino and English, just like how Filipinos actually chat on Messenger. It uses "po" for respect, Pinoy expressions, and knows industry-specific terms.
+WHY SOME PAGES DON'T APPEAR IN THE OAUTH LIST (the #1 issue users hit):
+- Pages created with Facebook's "New Pages Experience" (2022+) are managed through Business Portfolios, not direct admin access. The Facebook API cannot list them without extra permissions.
+- Two fixes: (a) Use the MANUAL connect wizard above — it works for every page type, OR (b) switch your page to "Classic Pages" mode in Facebook Settings, then retry the one-click button.
+- This is a known Facebook limitation, NOT a CaterAI bug. The manual wizard is the recommended workaround.
 
-Q: What if I want to reply manually?
-A: Just reply to any conversation yourself! When CaterAI detects that you (the page admin) sent a message, it automatically pauses for 30 minutes so you can handle the conversation. After 30 minutes, it resumes automatically.
+IF A USER IS STUCK CONNECTING:
+1. Ask: "Hindi po lumabas ang page niyo sa list, tama po ba?" (Your page didn't appear in the list, right?)
+2. Tell them to use the MANUAL connect wizard at /dashboard/connect — give them the 3 steps above.
+3. If the token is rejected: make sure they copied the FULL Page Access Token (not the App token or User token), and that it's a Page-scoped token from the correct app.
+4. Reassure them: "Normal lang po yan sa New Pages Experience — kaya may manual connect tayo para sure. 😊"
 
-Q: Can the AI work only during business hours?
-A: Yes! In the dashboard, you can set specific business hours. The AI will only auto-reply during those hours. Or keep it 24/7 — your choice.
-
-Q: How does the AI know about my business?
-A: Fill in the Knowledge Base builder in your dashboard. It's a simple form — add your packages, services, prices, menu items, and policies. The AI learns from this and uses it to answer customer questions accurately. No coding or markdown needed.
-
-Q: Is there a free trial?
-A: The free plan IS your free trial — 20 messages per day, forever, no credit card needed. Upgrade only when you're ready.
-
-Q: Can I cancel anytime?
-A: Yes, cancel anytime from your dashboard. No contracts, no cancellation fees.
+OTHER COMMON QUESTIONS:
+- Cost: Free forever for 20 msgs/day. Starter ₱499/mo, Pro ₱999/mo, Pro Annual ₱7,999/yr. No credit card for free.
+- Taglish: Yes — natural Filipino-English mix with "po", Pinoy expressions, industry terms.
+- Reply manually: Just reply yourself; AI auto-pauses 30 min so you can handle it.
+- Business hours: Set them in the dashboard; AI only replies during those hours (or keep 24/7).
+- How AI learns your business: Fill the Knowledge Base builder form (packages, services, prices, policies). No coding/markdown.
+- Free trial: The free plan IS the trial — 20 msgs/day forever, no card. Upgrade when ready.
+- Cancel: Anytime from the dashboard. No contracts or fees.
 
 PERSONALITY:
-- Speak in warm Taglish — mix of Filipino and English
-- Be helpful, concise, and friendly
-- Use "po" occasionally
-- Keep replies short (1-3 sentences)
-- If you don't know something, say "Let me connect you with our team" and suggest emailing support
-- Always encourage them to try the free plan: "Try mo na po, free naman! 😊"
+- Speak in warm Taglish — mix of Filipino and English, just like how Filipinos chat on Messenger.
+- Be helpful, concise, and friendly. Use "po" occasionally.
+- Keep replies short (1-3 sentences usually). Use a short numbered list ONLY when giving the connect steps.
+- If you don't know something, say "Let me connect you with our team" and suggest emailing support@caterai.ph.
+- Always encourage trying the free plan: "Try mo na po, free naman! 😊"
 
-Remember: You are the first thing potential customers interact with. Be impressive — this is a live demo of what the AI can do for their business!`;
+Remember: You are the first thing potential customers interact with, AND a support channel for existing users. Be impressive — this is a live demo of what the AI can do for their business!`;
+
+function staticFallback(userText: string): string {
+  const t = (userText || '').toLowerCase();
+  if (t.includes('connect') || t.includes('fb') || t.includes('page') || t.includes('facebook') || t.includes('hindi lumabas') || t.includes('di lumabas')) {
+    return `Para mag-connect ng FB page:\n\n1. Sa dashboard, click ang "Connect Your Facebook Page" button (works for Classic Pages).\n2. Kung hindi lumabas ang page niyo (New Pages Experience), gamitin ang "Or connect manually with Page Token" link — 3-step wizard lang po yan sa /dashboard/connect. 😊\n\nTry mo na po, free naman! May tanong pa po kayo?`;
+  }
+  if (t.includes('price') || t.includes('cost') || t.includes('magkano') || t.includes('presyo')) {
+    return 'Free po ang 20 messages/day forever! Starter ₱499/mo (3 pages), Pro ₱999/mo (unlimited). No credit card sa free. Try mo na po! 😊';
+  }
+  return 'Hi po! 👋 Ako si CaterAI Assistant. Medyo may technical glitch po ngayon, pero pwede niyo po akong i-message ulit in a few minutes? Or sign up na lang po for free — 20 messages/day, no credit card needed! 🚀';
+}
+
+async function tryModel(model: string, messages: unknown[], apiKey: string) {
+  const res = await fetch(OPENROUTER_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+      'HTTP-Referer': APP_URL,
+      'X-Title': 'CaterAI Website Assistant',
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: 0.7,
+      max_tokens: 350,
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error(`[Website Assistant] ${model} -> HTTP ${res.status}:`, errText.slice(0, 200));
+    return null;
+  }
+
+  const data = await res.json();
+  const reply = data.choices?.[0]?.message?.content?.trim();
+  return reply || null;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -70,40 +123,31 @@ export async function POST(request: NextRequest) {
 
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: 'AI not configured' }, { status: 500 });
+      const last = messages[messages.length - 1];
+      return NextResponse.json({ reply: staticFallback(last?.content || '') });
     }
 
-    const res = await fetch(OPENROUTER_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-        'HTTP-Referer': 'https://ai-messenger-pi.vercel.app',
-        'X-Title': 'CaterAI Website Assistant',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          ...messages.slice(-10), // Keep last 10 messages for context
-        ],
-        temperature: 0.7,
-        max_tokens: 300,
-      }),
-    });
+    const payload = [
+      { role: 'system', content: SYSTEM_PROMPT },
+      ...messages.slice(-10), // keep last 10 messages for context
+    ];
 
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error('[Website Assistant] OpenRouter error:', errText);
-      return NextResponse.json({ error: 'AI request failed' }, { status: 500 });
+    // Try the free-first model chain until one works.
+    for (const model of MODEL_CHAIN) {
+      const reply = await tryModel(model, payload, apiKey);
+      if (reply) {
+        return NextResponse.json({ reply, model });
+      }
     }
 
-    const data = await res.json();
-    const reply = data.choices?.[0]?.message?.content || 'Sorry, di ako makasagot ngayon. Try again po?';
-
-    return NextResponse.json({ reply });
+    // All models failed — graceful static fallback so the demo never breaks.
+    const last = messages[messages.length - 1];
+    return NextResponse.json({ reply: staticFallback(last?.content || '') });
   } catch (err) {
     console.error('[Website Assistant] Error:', err);
-    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
+    return NextResponse.json(
+      { reply: 'Sorry po, medyo nagka-glitch. Try again po in a few minutes? 🙏' },
+      { status: 200 }
+    );
   }
 }
