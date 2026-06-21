@@ -2,7 +2,7 @@
 
 // ============================================================
 // KnowledgeBaseManager — Industry-aware structured KB builder
-// Dynamically adapts form fields based on selected business type
+// Collapsible accordion sections for organized, scannable UX
 // ============================================================
 
 import { useState, useEffect, useCallback } from 'react';
@@ -12,6 +12,30 @@ interface Props { pageId: string; }
 
 interface Pkg { id: string; [key: string]: string; }
 interface Item { id: string; name: string; category: string; notes: string; }
+
+function SectionHeader({ icon, title, count, badge, expanded, onClick }: {
+  icon: string; title: string; count?: number; badge?: string; expanded: boolean; onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center justify-between py-3 px-1 text-left hover:opacity-80 transition-opacity group"
+    >
+      <div className="flex items-center gap-2.5">
+        <span className={`text-lg transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`}>▶</span>
+        <span className="font-semibold text-gray-800 text-sm">{icon} {title}</span>
+        {count !== undefined && count > 0 && (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-white/80 border border-orange-200 text-gray-500 font-medium ml-1">
+            {count}
+          </span>
+        )}
+      </div>
+      {badge && (
+        <span className="text-[10px] text-gray-400 font-normal group-hover:text-gray-600">{badge}</span>
+      )}
+    </button>
+  );
+}
 
 export function KnowledgeBaseManager({ pageId }: Props) {
   const [loading, setLoading] = useState(true);
@@ -34,6 +58,20 @@ export function KnowledgeBaseManager({ pageId }: Props) {
 
   // Policies
   const [policies, setPolicies] = useState<Record<string, string>>({});
+
+  // Collapse state for sections
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    business: true,
+    packages: true,
+    items: false,
+    policies: false,
+  });
+
+  // Collapse state for individual packages (by pkg.id)
+  const [expandedPackages, setExpandedPackages] = useState<Record<string, boolean>>({});
+
+  const toggleSection = (key: string) => setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+  const togglePackage = (id: string) => setExpandedPackages(prev => ({ ...prev, [id]: !prev[id] }));
 
   const loadExisting = useCallback(async () => {
     setLoading(true);
@@ -67,11 +105,19 @@ export function KnowledgeBaseManager({ pageId }: Props) {
   };
 
   // Helpers
-  const addPackage = () => setPackages([...packages, { id: Date.now().toString() }]);
+  const addPackage = () => {
+    const newId = Date.now().toString();
+    setPackages([...packages, { id: newId }]);
+    setExpandedPackages(prev => ({ ...prev, [newId]: true }));
+    setExpandedSections(prev => ({ ...prev, packages: true }));
+  };
   const removePackage = (id: string) => setPackages(packages.filter(p => p.id !== id));
   const updatePackage = (id: string, field: string, val: string) => setPackages(packages.map(p => p.id === id ? { ...p, [field]: val } : p));
 
-  const addItem = () => setItems([...items, { id: Date.now().toString(), name: '', category: industry.itemCategories[0], notes: '' }]);
+  const addItem = () => {
+    setItems([...items, { id: Date.now().toString(), name: '', category: industry.itemCategories[0], notes: '' }]);
+    setExpandedSections(prev => ({ ...prev, items: true }));
+  };
   const removeItem = (id: string) => setItems(items.filter(m => m.id !== id));
   const updateItem = (id: string, field: string, val: string) => setItems(items.map(m => m.id === id ? { ...m, [field]: val } : m));
 
@@ -80,14 +126,12 @@ export function KnowledgeBaseManager({ pageId }: Props) {
     let md = `# ${bizInfo[industry.bizFields[0].key] || 'Business'}\n\n`;
     md += `**Industry:** ${industry.label}\n\n`;
 
-    // Business info
     industry.bizFields.forEach(f => {
       const val = bizInfo[f.key];
       if (val) md += `**${f.label}:** ${val}\n`;
     });
     md += '\n';
 
-    // Packages
     const validPkgs = packages.filter(p => p.name?.trim());
     if (validPkgs.length > 0) {
       md += `## ${industry.packageLabel}s\n\n`;
@@ -102,7 +146,6 @@ export function KnowledgeBaseManager({ pageId }: Props) {
       });
     }
 
-    // Items
     const validItems = items.filter(m => m.name.trim());
     if (validItems.length > 0) {
       md += `## ${industry.itemsLabel}\n\n`;
@@ -116,7 +159,6 @@ export function KnowledgeBaseManager({ pageId }: Props) {
       });
     }
 
-    // Policies
     const hasPolicies = industry.policyFields.some(f => policies[f.key]);
     if (hasPolicies) {
       md += `## Policies & Terms\n\n`;
@@ -153,7 +195,6 @@ export function KnowledgeBaseManager({ pageId }: Props) {
 
       if (error) throw error;
 
-      // Save markdown version for AI search
       await supabase.from('knowledge_bases').upsert({
         page_id: pageId,
         title: title + ' (AI Context)',
@@ -163,7 +204,6 @@ export function KnowledgeBaseManager({ pageId }: Props) {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'page_id,title' });
 
-      // Generate embeddings
       const res = await fetch('/api/knowledge-base', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -181,13 +221,22 @@ export function KnowledgeBaseManager({ pageId }: Props) {
     setSaving(false);
   };
 
+  // Computed counts for summary
+  const filledPackages = packages.filter(p => p.name?.trim()).length;
+  const totalPackages = packages.length;
+  const filledItems = items.filter(m => m.name.trim()).length;
+  const totalItems = items.length;
+  const filledPolicies = industry.policyFields.filter(f => policies[f.key]).length;
+  const totalPolicies = industry.policyFields.length;
+  const bizName = bizInfo[industry.bizFields[0].key]?.trim();
+
   if (loading) return <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-16 skeleton rounded-xl" />)}</div>;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {message && <div className={`p-3 rounded-xl text-sm ${message.startsWith('✅') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>{message}</div>}
 
-      {/* Industry Selector */}
+      {/* === Industry Selector (always visible) === */}
       <div className="p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200">
         <h4 className="text-sm font-semibold text-gray-700 mb-3">🏷️ What kind of business is this?</h4>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -205,101 +254,205 @@ export function KnowledgeBaseManager({ pageId }: Props) {
         </div>
       </div>
 
-      {/* Business Info */}
-      <div className="p-4 rounded-xl bg-orange-50/50 border border-orange-100 space-y-3">
-        <h4 className="text-sm font-semibold text-gray-700">🏪 Business Information</h4>
-        <div className="grid sm:grid-cols-2 gap-3">
-          {industry.bizFields.map(f => (
-            <input
-              key={f.key}
-              type={f.type === 'number' ? 'number' : 'text'}
-              value={bizInfo[f.key] || ''}
-              onChange={(e) => setBizInfo({ ...bizInfo, [f.key]: e.target.value })}
-              placeholder={f.placeholder}
-              className={`px-3 py-2 rounded-lg border border-orange-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/50 ${f.type === 'textarea' ? 'col-span-2' : ''}`}
-            />
-          ))}
+      {/* === Quick Summary Bar === */}
+      {bizName && (
+        <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 rounded-xl bg-white/90 border border-orange-100 text-xs text-gray-500">
+          <span className="font-semibold text-gray-700 truncate max-w-[200px]">{bizName}</span>
+          <span className="text-gray-300">·</span>
+          <span>{filledPackages}/{totalPackages} {industry.packageLabel.toLowerCase()}s</span>
+          <span className="text-gray-300">·</span>
+          <span>{filledItems}/{totalItems} items</span>
+          <span className="text-gray-300">·</span>
+          <span>{filledPolicies}/{totalPolicies} policies</span>
         </div>
-      </div>
+      )}
 
-      {/* Packages */}
-      <div className="p-4 rounded-xl bg-amber-50/50 border border-amber-100 space-y-3">
-        <div className="flex items-center justify-between">
-          <h4 className="text-sm font-semibold text-gray-700">📦 {industry.packageLabel}s</h4>
-          <button onClick={addPackage} className="text-xs px-2 py-1 rounded-lg bg-amber-200 text-amber-800 hover:bg-amber-300 font-medium">+ Add {industry.packageLabel}</button>
-        </div>
-        {packages.map((pkg, i) => (
-          <div key={pkg.id} className="p-3 rounded-lg bg-white border border-amber-100 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-400">{industry.packageLabel} {i + 1}</span>
-              {packages.length > 1 && <button onClick={() => removePackage(pkg.id)} className="text-xs text-red-400 hover:text-red-600">Remove</button>}
+      {/* === Business Info (accordion) === */}
+      <div className="rounded-xl bg-orange-50/50 border border-orange-100 overflow-hidden">
+        <SectionHeader
+          icon="🏪"
+          title="Business Information"
+          badge={bizName ? '✓ filled' : undefined}
+          expanded={expandedSections.business}
+          onClick={() => toggleSection('business')}
+        />
+        {expandedSections.business && (
+          <div className="px-4 pb-4 space-y-3">
+            <div className="grid sm:grid-cols-2 gap-3">
+              {industry.bizFields.map(f => (
+                <input
+                  key={f.key}
+                  type={f.type === 'number' ? 'number' : 'text'}
+                  value={bizInfo[f.key] || ''}
+                  onChange={(e) => setBizInfo({ ...bizInfo, [f.key]: e.target.value })}
+                  placeholder={f.placeholder}
+                  className={`px-3 py-2 rounded-lg border border-orange-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/50 ${f.type === 'textarea' ? 'col-span-2' : ''}`}
+                />
+              ))}
             </div>
-            {industry.packageFields.map(pf => (
-              <input
-                key={pf.key}
-                type={pf.type === 'number' ? 'number' : 'text'}
-                value={pkg[pf.key] || ''}
-                onChange={(e) => updatePackage(pkg.id, pf.key, e.target.value)}
-                placeholder={pf.placeholder}
-                className="w-full px-3 py-2 rounded-lg border border-amber-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50"
-              />
-            ))}
           </div>
-        ))}
+        )}
       </div>
 
-      {/* Items */}
-      <div className="p-4 rounded-xl bg-green-50/50 border border-green-100 space-y-3">
-        <div className="flex items-center justify-between">
-          <h4 className="text-sm font-semibold text-gray-700">🍽️ {industry.itemsLabel}</h4>
-          <button onClick={addItem} className="text-xs px-2 py-1 rounded-lg bg-green-200 text-green-800 hover:bg-green-300 font-medium">+ Add Item</button>
-        </div>
-        {items.map((item, i) => (
-          <div key={item.id} className="flex gap-2 items-center">
-            <input
-              type="text"
-              value={item.name}
-              onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-              placeholder={`Item ${i + 1} name`}
-              className="flex-1 px-3 py-2 rounded-lg border border-green-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-400/50"
-            />
-            <select
-              value={item.category}
-              onChange={(e) => updateItem(item.id, 'category', e.target.value)}
-              className="px-2 py-2 rounded-lg border border-green-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-green-400/50"
-            >
-              {industry.itemCategories.map(c => <option key={c}>{c}</option>)}
-            </select>
-            <input
-              type="text"
-              value={item.notes}
-              onChange={(e) => updateItem(item.id, 'notes', e.target.value)}
-              placeholder="Notes (optional)"
-              className="w-32 px-3 py-2 rounded-lg border border-green-200 text-xs focus:outline-none focus:ring-2 focus:ring-green-400/50"
-            />
-            {items.length > 1 && <button onClick={() => removeItem(item.id)} className="text-xs text-red-400 hover:text-red-600 px-1">×</button>}
+      {/* === Packages (accordion) === */}
+      <div className="rounded-xl bg-amber-50/50 border border-amber-100 overflow-hidden">
+        <SectionHeader
+          icon="📦"
+          title={`${industry.packageLabel}s`}
+          count={filledPackages}
+          badge={`${filledPackages} of ${totalPackages}`}
+          expanded={expandedSections.packages}
+          onClick={() => toggleSection('packages')}
+        />
+        {expandedSections.packages && (
+          <div className="px-4 pb-4 space-y-2">
+            {packages.map((pkg, i) => {
+              const pkgName = pkg[industry.packageFields[0]?.key] || pkg.name || '';
+              const isExpanded = expandedPackages[pkg.id] !== false; // default open for first, collapsed for rest
+              const filledFields = industry.packageFields.filter(pf => pf.key !== 'name' && pkg[pf.key]).length;
+              const totalFields = industry.packageFields.filter(pf => pf.key !== 'name').length;
+
+              return (
+                <div key={pkg.id} className="rounded-lg bg-white border border-amber-100 overflow-hidden">
+                  {/* Package header bar */}
+                  <button
+                    onClick={() => togglePackage(pkg.id)}
+                    className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-amber-50/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`text-xs transition-transform duration-200 flex-shrink-0 ${isExpanded ? 'rotate-90' : ''}`}>▶</span>
+                      <span className={`text-sm font-medium truncate ${pkgName ? 'text-gray-800' : 'text-gray-400 italic'}`}>
+                        {pkgName || `${industry.packageLabel} ${i + 1}`}
+                      </span>
+                      {filledFields > 0 && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium flex-shrink-0">
+                          {filledFields}/{totalFields} fields
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {packages.length > 1 && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removePackage(pkg.id); }}
+                          className="text-xs text-red-400 hover:text-red-600 px-1.5 py-0.5"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Expanded fields */}
+                  {isExpanded && (
+                    <div className="px-3 pb-3 space-y-2 border-t border-amber-50">
+                      {industry.packageFields.map(pf => (
+                        <input
+                          key={pf.key}
+                          type={pf.type === 'number' ? 'number' : 'text'}
+                          value={pkg[pf.key] || ''}
+                          onChange={(e) => updatePackage(pkg.id, pf.key, e.target.value)}
+                          placeholder={pf.placeholder}
+                          className="w-full px-3 py-2 rounded-lg border border-amber-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <button onClick={addPackage} className="w-full py-2.5 rounded-lg border-2 border-dashed border-amber-200 text-xs text-amber-600 hover:bg-amber-50 hover:border-amber-300 transition-colors font-medium">
+              + Add {industry.packageLabel}
+            </button>
           </div>
-        ))}
+        )}
       </div>
 
-      {/* Policies */}
-      <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-100 space-y-3">
-        <h4 className="text-sm font-semibold text-gray-700">📋 Policies & Terms</h4>
-        <div className="grid sm:grid-cols-2 gap-3">
-          {industry.policyFields.map(f => (
-            <input
-              key={f.key}
-              type="text"
-              value={policies[f.key] || ''}
-              onChange={(e) => setPolicies({ ...policies, [f.key]: e.target.value })}
-              placeholder={f.placeholder}
-              className="px-3 py-2 rounded-lg border border-blue-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-            />
-          ))}
-        </div>
+      {/* === Items (accordion with category groups) === */}
+      <div className="rounded-xl bg-green-50/50 border border-green-100 overflow-hidden">
+        <SectionHeader
+          icon="🍽️"
+          title={industry.itemsLabel}
+          count={filledItems}
+          badge={`${filledItems} of ${totalItems}`}
+          expanded={expandedSections.items}
+          onClick={() => toggleSection('items')}
+        />
+        {expandedSections.items && (
+          <div className="px-4 pb-4 space-y-2">
+            {/* Group items by category */}
+            {industry.itemCategories.map(cat => {
+              const catItems = items.filter(m => m.category === cat);
+              if (catItems.length === 0) return null;
+              return (
+                <div key={cat} className="space-y-1">
+                  <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide px-1 pt-2">{cat}</div>
+                  {catItems.map((item, idx) => (
+                    <div key={item.id} className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        value={item.name}
+                        onChange={(e) => updateItem(item.id, 'name', e.target.value)}
+                        placeholder={`Item ${idx + 1} name`}
+                        className="flex-1 px-3 py-2 rounded-lg border border-green-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-400/50"
+                      />
+                      <select
+                        value={item.category}
+                        onChange={(e) => updateItem(item.id, 'category', e.target.value)}
+                        className="px-2 py-2 rounded-lg border border-green-200 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-green-400/50"
+                      >
+                        {industry.itemCategories.map(c => <option key={c}>{c}</option>)}
+                      </select>
+                      <input
+                        type="text"
+                        value={item.notes}
+                        onChange={(e) => updateItem(item.id, 'notes', e.target.value)}
+                        placeholder="Notes"
+                        className="w-28 px-3 py-2 rounded-lg border border-green-200 text-xs focus:outline-none focus:ring-2 focus:ring-green-400/50"
+                      />
+                      {items.length > 1 && (
+                        <button onClick={() => removeItem(item.id)} className="text-xs text-red-400 hover:text-red-600 px-1 flex-shrink-0">×</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+            <button onClick={addItem} className="w-full py-2.5 rounded-lg border-2 border-dashed border-green-200 text-xs text-green-600 hover:bg-green-50 hover:border-green-300 transition-colors font-medium">
+              + Add Item
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Save */}
+      {/* === Policies (accordion) === */}
+      <div className="rounded-xl bg-blue-50/50 border border-blue-100 overflow-hidden">
+        <SectionHeader
+          icon="📋"
+          title="Policies & Terms"
+          count={filledPolicies}
+          badge={`${filledPolicies} of ${totalPolicies}`}
+          expanded={expandedSections.policies}
+          onClick={() => toggleSection('policies')}
+        />
+        {expandedSections.policies && (
+          <div className="px-4 pb-4">
+            <div className="grid sm:grid-cols-2 gap-3">
+              {industry.policyFields.map(f => (
+                <input
+                  key={f.key}
+                  type="text"
+                  value={policies[f.key] || ''}
+                  onChange={(e) => setPolicies({ ...policies, [f.key]: e.target.value })}
+                  placeholder={f.placeholder}
+                  className="px-3 py-2 rounded-lg border border-blue-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* === Save === */}
       <button onClick={handleSave} disabled={saving} className="w-full py-3 rounded-xl bg-gradient-to-r from-[#ff6b6b] to-[#ffa94d] text-white font-semibold text-sm hover:shadow-lg transition-all disabled:opacity-50">
         {saving ? 'Saving...' : '💾 Save & Generate AI Knowledge'}
       </button>
