@@ -8,6 +8,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { FacebookConnect } from '@/components/Dashboard/FacebookConnect';
 
 // ============================================================
 // Types
@@ -83,6 +84,10 @@ export default function AdminDashboardPage() {
   const [paymentNotes, setPaymentNotes] = useState('');
   const [addPaymentLoading, setAddPaymentLoading] = useState(false);
   const [addPaymentMsg, setAddPaymentMsg] = useState('');
+
+  // Connect page modal (admin connects FB page on behalf of a client)
+  const [showConnectPage, setShowConnectPage] = useState(false);
+  const [connectClient, setConnectClient] = useState<ClientRecord | null>(null);
 
   // Recovery
   const [recoveryToken, setRecoveryToken] = useState('');
@@ -529,6 +534,15 @@ export default function AdminDashboardPage() {
                         )}
                         <button
                           onClick={() => {
+                            setConnectClient(client);
+                            setShowConnectPage(true);
+                          }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                        >
+                          + Connect Page
+                        </button>
+                        <button
+                          onClick={() => {
                             setSelectedClient(client.id);
                             setShowAddPayment(true);
                           }}
@@ -820,6 +834,46 @@ export default function AdminDashboardPage() {
                   className="flex-1 gradient-btn px-4 py-2 rounded-xl text-sm disabled:opacity-50"
                 >
                   {addPaymentLoading ? 'Saving...' : 'Record Payment'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================== */}
+        {/* Connect Page Modal (Admin → Client) */}
+        {/* =========================================== */}
+        {showConnectPage && connectClient && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+            <div className="warm-card p-6 max-w-lg w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+              <h3 className="font-bold text-gray-800 mb-1">Connect Facebook Page</h3>
+              <p className="text-xs text-gray-500 mb-4">
+                for <span className="font-medium text-gray-700">{connectClient.full_name}</span> ({connectClient.email})
+              </p>
+
+              <div className="text-xs text-gray-500 bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4 space-y-1.5">
+                <p className="font-medium text-blue-700">How this works:</p>
+                <ol className="list-decimal ml-4 space-y-1 text-blue-600">
+                  <li>Ask the client to make you admin of their Facebook Page</li>
+                  <li>Click "Connect Pages" below — Facebook will ask you to approve pages</li>
+                  <li>Pages get assigned directly to {connectClient.full_name.split(' ')[0]}'s account</li>
+                  <li>The client can then manage KB, AI toggle, and schedules</li>
+                </ol>
+              </div>
+
+              <FacebookConnect
+                userId={user.id}
+                existingPages={connectClient.pages.map(p => ({ id: p.page_id, page_id: p.page_id, page_name: p.page_name }))}
+                targetUserId={connectClient.id}
+                targetUserName={connectClient.full_name}
+              />
+
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={() => { setShowConnectPage(false); setConnectClient(null); }}
+                  className="px-4 py-2 rounded-xl text-sm border border-orange-200 text-gray-600 hover:bg-orange-50"
+                >
+                  Close
                 </button>
               </div>
             </div>

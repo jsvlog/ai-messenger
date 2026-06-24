@@ -85,9 +85,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Step 4: Save connected pages to DB (user already verified as admin above)
+    // Step 4: Save connected pages to DB
+    // `state` carries the target user_id (client ID when admin connects on behalf of a client)
     const serviceClient = getServiceClient();
-    const userId = user.id || state;
+    const userId = state || user.id;
 
     if (!userId) {
       return NextResponse.redirect(

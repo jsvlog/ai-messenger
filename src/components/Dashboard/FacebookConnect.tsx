@@ -12,9 +12,12 @@ import Link from 'next/link';
 interface Props {
   userId: string;
   existingPages: { id: string; page_id: string; page_name: string }[];
+  targetUserId?: string; // When admin connects on behalf of a client
+  targetUserName?: string; // Client name for display
+  compact?: boolean; // Smaller layout for modal use
 }
 
-export function FacebookConnect({ userId, existingPages }: Props) {
+export function FacebookConnect({ userId, existingPages, targetUserId, targetUserName, compact }: Props) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const supabase = createClient();
@@ -24,13 +27,16 @@ export function FacebookConnect({ userId, existingPages }: Props) {
     if (!appId) { setMessage('❌ Meta App ID not configured'); return; }
     const redirectUri = 'https://ai-messenger-pi.vercel.app/api/auth/facebook/callback';
     const scope = 'pages_messaging,pages_show_list';
-    const url = `https://www.facebook.com/v25.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${userId}&response_type=code`;
+    // state = target user_id (the client whose page we're connecting)
+    const stateUserId = targetUserId || userId;
+    const url = `https://www.facebook.com/v25.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${stateUserId}&response_type=code`;
     window.location.href = url;
   };
 
   const handleDisconnect = async (pageId: string) => {
     setLoading(true);
-    const { error } = await supabase.from('connected_pages').delete().eq('page_id', pageId).eq('user_id', userId);
+    const deleteUserId = targetUserId || userId;
+    const { error } = await supabase.from('connected_pages').delete().eq('page_id', pageId).eq('user_id', deleteUserId);
     if (!error) window.location.reload();
     else setMessage(`❌ ${error.message}`);
     setLoading(false);
