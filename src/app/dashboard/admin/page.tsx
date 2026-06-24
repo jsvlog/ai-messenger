@@ -89,6 +89,57 @@ export default function AdminDashboardPage() {
   const [showConnectPage, setShowConnectPage] = useState(false);
   const [connectClient, setConnectClient] = useState<ClientRecord | null>(null);
 
+  // Create client modal
+  const [showCreateClient, setShowCreateClient] = useState(false);
+  const [newClientName, setNewClientName] = useState('');
+  const [newClientEmail, setNewClientEmail] = useState('');
+  const [newClientPassword, setNewClientPassword] = useState('');
+  const [createClientLoading, setCreateClientLoading] = useState(false);
+  const [createClientMsg, setCreateClientMsg] = useState('');
+
+  // ---- Create client ----
+  const handleCreateClient = async () => {
+    if (!newClientName || !newClientEmail || !newClientPassword) {
+      setCreateClientMsg('All fields are required.');
+      return;
+    }
+    if (newClientPassword.length < 6) {
+      setCreateClientMsg('Password must be at least 6 characters.');
+      return;
+    }
+    setCreateClientLoading(true);
+    setCreateClientMsg('');
+    try {
+      const res = await fetch('/api/admin/create-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newClientEmail,
+          fullName: newClientName,
+          password: newClientPassword,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCreateClientMsg(`✅ Account created for ${data.fullName}!`);
+        setNewClientName('');
+        setNewClientEmail('');
+        setNewClientPassword('');
+        await loadClients();
+        setTimeout(() => {
+          setShowCreateClient(false);
+          setCreateClientMsg('');
+        }, 2000);
+      } else {
+        setCreateClientMsg(`❌ ${data.error || 'Failed to create account'}`);
+      }
+    } catch (e: any) {
+      setCreateClientMsg(`❌ ${e.message}`);
+    } finally {
+      setCreateClientLoading(false);
+    }
+  };
+
   // Recovery
   const [recoveryToken, setRecoveryToken] = useState('');
   const [recoveryRunning, setRecoveryRunning] = useState(false);
@@ -465,6 +516,18 @@ export default function AdminDashboardPage() {
         {/* =========================================== */}
         {activeTab === 'clients' && (
           <div className="space-y-4 fade-in">
+            {/* Create Client Button */}
+            <div className="flex justify-between items-center">
+              <h3 className="text-sm font-semibold text-gray-600">
+                Clients ({clients.length})
+              </h3>
+              <button
+                onClick={() => setShowCreateClient(true)}
+                className="gradient-btn px-4 py-2 rounded-lg text-sm"
+              >
+                + Create Client
+              </button>
+            </div>
             {clientsLoading ? (
               <div className="warm-card p-10 text-center text-gray-400">Loading clients...</div>
             ) : clients.length === 0 ? (
@@ -834,6 +897,80 @@ export default function AdminDashboardPage() {
                   className="flex-1 gradient-btn px-4 py-2 rounded-xl text-sm disabled:opacity-50"
                 >
                   {addPaymentLoading ? 'Saving...' : 'Record Payment'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* =========================================== */}
+        {/* Create Client Modal */}
+        {/* =========================================== */}
+        {showCreateClient && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+            <div className="warm-card p-6 max-w-md w-full mx-4 shadow-2xl">
+              <h3 className="font-bold text-gray-800 mb-1">Create Client Account</h3>
+              <p className="text-xs text-gray-500 mb-4">
+                The client can log in immediately with these credentials.
+              </p>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Full Name</label>
+                  <input
+                    type="text"
+                    value={newClientName}
+                    onChange={(e) => setNewClientName(e.target.value)}
+                    placeholder="e.g. Juan Dela Cruz"
+                    className="w-full px-3 py-2 rounded-xl border border-orange-200 text-sm bg-white/60 focus:outline-none focus:ring-2 focus:ring-coral/30"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={newClientEmail}
+                    onChange={(e) => setNewClientEmail(e.target.value)}
+                    placeholder="e.g. juan@example.com"
+                    className="w-full px-3 py-2 rounded-xl border border-orange-200 text-sm bg-white/60 focus:outline-none focus:ring-2 focus:ring-coral/30"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 block mb-1">Temporary Password</label>
+                  <input
+                    type="text"
+                    value={newClientPassword}
+                    onChange={(e) => setNewClientPassword(e.target.value)}
+                    placeholder="At least 6 characters"
+                    className="w-full px-3 py-2 rounded-xl border border-orange-200 text-sm bg-white/60 focus:outline-none focus:ring-2 focus:ring-coral/30"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Give this to the client. They can change it later.
+                  </p>
+                </div>
+              </div>
+
+              {createClientMsg && (
+                <p className={`text-xs mt-3 px-3 py-2 rounded-lg ${
+                  createClientMsg.startsWith('✅') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-500'
+                }`}>
+                  {createClientMsg}
+                </p>
+              )}
+
+              <div className="flex gap-2 mt-4">
+                <button
+                  onClick={() => { setShowCreateClient(false); setCreateClientMsg(''); }}
+                  className="flex-1 px-4 py-2 rounded-xl text-sm border border-orange-200 text-gray-600 hover:bg-orange-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateClient}
+                  disabled={createClientLoading}
+                  className="flex-1 gradient-btn px-4 py-2 rounded-xl text-sm disabled:opacity-50"
+                >
+                  {createClientLoading ? 'Creating...' : 'Create Account'}
                 </button>
               </div>
             </div>
