@@ -195,7 +195,17 @@ export async function POST(request: NextRequest) {
     }
 
     // ==================================================
-    // 7. Build Taglish prompt + Call OpenRouter
+    // 7. Fetch knowledge base for industry detection
+    // ==================================================
+    const { data: kbData } = await supabase
+      .from('knowledge_bases')
+      .select('content_type, content_md')
+      .eq('page_id', page_id)
+      .eq('is_active', true)
+      .limit(5);
+
+    // ==================================================
+    // 8. Build Taglish prompt + Call OpenRouter
     // ==================================================
     const greeting = senderName ? `${senderName}, ` : '';
     const userMessageForAI = `${greeting}Customer message: "${message_text}"`;
