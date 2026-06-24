@@ -78,7 +78,14 @@ export function KnowledgeBaseManager({ pageId }: Props) {
     try {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
-      const { data } = await supabase.from('knowledge_bases').select('*').eq('page_id', pageId).order('created_at', { ascending: false }).limit(1);
+      // Get form data record (NOT the AI context markdown record)
+      const { data } = await supabase
+        .from('knowledge_bases')
+        .select('*')
+        .eq('page_id', pageId)
+        .not('content_type', 'ilike', '%_context')
+        .order('created_at', { ascending: false })
+        .limit(1);
       if (data && data.length > 0) {
         const kb = data[0];
         setEditingId(kb.id);
@@ -222,10 +229,12 @@ export function KnowledgeBaseManager({ pageId }: Props) {
       const data = await res.json();
       console.log('[KB] API response:', data);
 
-      if (res.ok) {
-        setMessage(`✅ Saved! ${data.chunksCreated || '?'} AI chunks generated. Your AI assistant is ready.`);
+      if (res.ok && data.chunksCreated > 0) {
+        setMessage(`✅ Saved! ${data.chunksCreated} AI knowledge chunks generated.`);
+      } else if (res.ok) {
+        setMessage(`⚠️ Saved, but 0 AI chunks created. The AI may not use your KB. Try saving again.`);
       } else {
-        setMessage(`✅ Saved! (Embeddings: ${data.error || 'pending'})`);
+        setMessage(`⚠️ Saved, but AI embeddings failed: ${data.error || 'unknown error'}. The AI won't use your KB until this is fixed.`);
       }
     } catch (e: any) {
       console.error('[KB] Save error:', e);
