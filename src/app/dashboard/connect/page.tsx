@@ -36,6 +36,15 @@ export default function ConnectPage() {
       }, { onConflict: 'user_id,page_id' });
 
       if (error) throw error;
+
+      // Subscribe the page to our webhook so Meta sends us message events
+      setMessage('⏳ Subscribing page to webhook...');
+      const { subscribePageToWebhook } = await import('@/lib/facebook');
+      const subscribed = await subscribePageToWebhook(accessToken);
+      if (!subscribed) {
+        console.warn('[Connect] Webhook subscription may have failed — check Meta dashboard');
+      }
+
       setMessage('✅ Connected! Redirecting...');
       setTimeout(() => router.push('/dashboard'), 1500);
     } catch (e: any) {

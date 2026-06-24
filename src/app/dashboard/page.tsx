@@ -1,5 +1,5 @@
 // ============================================================
-// Dashboard — Main multi-tenant control panel
+// Dashboard — Managed Service client panel
 // ============================================================
 export const dynamic = 'force-dynamic';
 
@@ -7,14 +7,11 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { FacebookConnect } from '@/components/Dashboard/FacebookConnect';
-// ManualPageConnect imported dynamically when needed — see JSX below
 import { AIToggle } from '@/components/Dashboard/AIToggle';
 import { KnowledgeBaseManager } from '@/components/Dashboard/KnowledgeBaseManager';
 import { SchedulingConfig } from '@/components/Dashboard/SchedulingConfig';
-import { SubscriptionCard } from '@/components/Dashboard/SubscriptionCard';
 import { MessageLogTable } from '@/components/Dashboard/MessageLogTable';
 import { PageSelector } from '@/components/Dashboard/PageSelector';
-import { OnboardingWizard } from '@/components/Dashboard/OnboardingWizard';
 import { getAnalytics, AnalyticsBar } from '@/components/Dashboard/AnalyticsPanel';
 
 export default async function DashboardPage({
@@ -44,6 +41,7 @@ export default async function DashboardPage({
 
   if (!user) redirect('/login');
 
+  const isAdmin = user.email === 'sczyrynjohnson@gmail.com';
   const params = await searchParams;
   const statusMessage = params.success
     ? { type: 'success' as const, text: `✅ Connected ${params.count || ''} page(s) successfully!` }
@@ -52,7 +50,7 @@ export default async function DashboardPage({
       : null;
   const selectedPageId = params.page;
 
-  // Fetch tenant's connected pages (with error fallback)
+  // Fetch tenant's data
   let pages: any[] = [];
   let profile: any = null;
   let subscription: any = null;
@@ -103,14 +101,18 @@ export default async function DashboardPage({
   }
 
   const hasPages = (pages?.length || 0) > 0;
-  const hasSubscription = !!subscription;
+  const isSubActive = subscription && subscription.status === 'active';
+  const daysLeft = isSubActive
+    ? Math.max(0, Math.ceil((new Date(subscription.expires_at).getTime() - Date.now()) / 86400000))
+    : 0;
+  const planLabel = isSubActive
+    ? subscription.plan.charAt(0).toUpperCase() + subscription.plan.slice(1)
+    : 'Managed Service';
 
   // Fetch analytics for active page
   let analytics = { msgsToday: 0, msgsWeek: 0, responseRate: 100, leadsCaptured: 0, avgLatencyMs: 0 };
-  let dailyMsgCount = 0;
   if (activePage) {
     analytics = await getAnalytics(activePage.id, supabase);
-    dailyMsgCount = analytics.msgsToday;
   }
 
   return (
@@ -132,16 +134,26 @@ export default async function DashboardPage({
             </div>
           </div>
           <div className="flex items-center gap-4">
+            {isAdmin && (
+              <Link
+                href="/dashboard/admin"
+                className="text-xs px-3 py-1.5 rounded-full bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 text-purple-700 font-medium hover:shadow-sm transition-all"
+              >
+                🛠️ Admin
+              </Link>
+            )}
             <Link
               href="/dashboard/leads"
               className="text-xs px-3 py-1.5 rounded-full bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 text-green-700 font-medium hover:shadow-sm transition-all"
             >
               📋 Leads
             </Link>
-            <span className="text-xs px-3 py-1.5 rounded-full bg-gradient-to-r from-orange-100 to-amber-100 text-orange-700 font-medium border border-orange-200">
-              {subscription
-                ? `${subscription.plan.replace('week', ' Week')} Plan`
-                : 'Free Plan'}
+            <span className={`text-xs px-3 py-1.5 rounded-full font-medium border ${
+              isSubActive
+                ? 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border-green-200'
+                : 'bg-gradient-to-r from-orange-100 to-amber-100 text-orange-700 border-orange-200'
+            }`}>
+              {isSubActive ? `${planLabel} · ${daysLeft}d left` : planLabel}
             </span>
             <form action="/api/auth/signout" method="POST">
               <button
@@ -170,18 +182,7 @@ export default async function DashboardPage({
         {/* Analytics Bar */}
         {activePage && <AnalyticsBar stats={analytics} />}
 
-        {/* ============ ONBOARDING WIZARD ============ */}
-        {(!hasPages || !hasKb || !hasSubscription) && (
-          <div className="mb-8">
-            <OnboardingWizard
-              hasPages={hasPages}
-              hasKb={hasKb}
-              hasSubscription={hasSubscription}
-            />
-          </div>
-        )}
-
-        {/* ============ WELCOME BANNER ============ */}
+        {/* Welcome banner (only if no pages yet) */}
         {!hasPages && (
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#ff6b6b] via-[#f77f5d] to-[#ffa94d] p-8 text-white shadow-xl shadow-orange-300/30 mb-8">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/4 blur-3xl" />
@@ -191,15 +192,15 @@ export default async function DashboardPage({
                 🚀 Let&apos;s get your Facebook Page connected!
               </h2>
               <p className="text-white/90 max-w-xl">
-                Connect your Facebook page below and let AI handle customer inquiries 24/7 — in warm, friendly Taglish.
+                Your page has been set up by our team. Connect it below and the AI will handle customer inquiries 24/7 — in warm, friendly Taglish.
               </p>
             </div>
           </div>
         )}
 
-        {/* ============ MAIN GRID: Sidebar + Content ============ */}
+        {/* MAIN GRID: Sidebar + Content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* SIDEBAR — on mobile: below content */}
+          {/* SIDEBAR */}
           <div className="lg:col-span-1 space-y-6 order-2 lg:order-1">
             {/* Page Selector */}
             <section className="rounded-2xl bg-white/80 backdrop-blur-sm border border-orange-100 shadow-lg shadow-orange-100/50 p-4">
@@ -213,14 +214,24 @@ export default async function DashboardPage({
               />
             </section>
 
-            {/* Subscription Card */}
+            {/* Subscription Status */}
             <section className="rounded-2xl bg-white/80 backdrop-blur-sm border border-orange-100 shadow-lg shadow-orange-100/50 p-4">
-              <h3 className="text-sm font-semibold text-gray-800 mb-3">💎 Plan</h3>
-              <SubscriptionCard
-                currentPlan={profile?.plan || 'free'}
-                subscription={subscription}
-                dailyMsgCount={dailyMsgCount}
-              />
+              <h3 className="text-sm font-semibold text-gray-800 mb-3">💎 Subscription</h3>
+              <div className="p-4 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200">
+                <p className="text-sm text-gray-600">Status</p>
+                <p className="text-xl font-bold bg-gradient-to-r from-[#ff6b6b] to-[#ffa94d] bg-clip-text text-transparent">
+                  {planLabel}
+                </p>
+                {isSubActive ? (
+                  <p className="text-xs text-green-600 mt-1">
+                    ✅ Active — {daysLeft} day{daysLeft !== 1 ? 's' : ''} remaining
+                  </p>
+                ) : (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Managed by AI Messenger
+                  </p>
+                )}
+              </div>
             </section>
 
             {/* Quick Links */}
@@ -233,28 +244,19 @@ export default async function DashboardPage({
                 >
                   📋 View All Leads
                 </Link>
-                <Link
-                  href="/pricing"
-                  className="block text-xs text-gray-600 hover:text-[#ff6b6b] transition-colors py-1.5 px-2 rounded-lg hover:bg-orange-50"
-                >
-                  💎 Upgrade Plan
-                </Link>
+                {activePage && (
+                  <Link
+                    href={`/dashboard/connect`}
+                    className="block text-xs text-gray-600 hover:text-[#ff6b6b] transition-colors py-1.5 px-2 rounded-lg hover:bg-orange-50"
+                  >
+                    ➕ Connect Another Page
+                  </Link>
+                )}
               </div>
-            </section>
-
-            {/* Setup Checklist */}
-            <section className="rounded-2xl bg-white/80 backdrop-blur-sm border border-orange-100 shadow-lg shadow-orange-100/50 p-4">
-              <h3 className="text-sm font-semibold text-gray-800 mb-3">✅ Setup</h3>
-              <SetupChecklist
-                hasPages={hasPages}
-                hasKb={hasKb}
-                hasSubscription={hasSubscription}
-                webhookConfigured={false}
-              />
             </section>
           </div>
 
-          {/* MAIN CONTENT — on mobile: first */}
+          {/* MAIN CONTENT */}
           <div className="lg:col-span-3 space-y-6 order-1 lg:order-2">
             {/* Facebook Connect */}
             <section className="rounded-2xl bg-white/80 backdrop-blur-sm border border-orange-100 shadow-lg shadow-orange-100/50 p-6">
@@ -272,7 +274,6 @@ export default async function DashboardPage({
                   </Link>
                 </p>
               )}
-
             </section>
 
             {/* AI Toggle */}
@@ -317,40 +318,6 @@ export default async function DashboardPage({
           </div>
         </div>
       </main>
-    </div>
-  );
-}
-
-function SetupChecklist({
-  hasPages,
-  hasKb,
-  hasSubscription,
-  webhookConfigured,
-}: {
-  hasPages: boolean;
-  hasKb: boolean;
-  hasSubscription: boolean;
-  webhookConfigured: boolean;
-}) {
-  const steps = [
-    { label: 'Facebook Page', done: hasPages },
-    { label: 'Knowledge Base', done: hasKb },
-    { label: 'Choose Plan', done: hasSubscription },
-    { label: 'Webhook Config', done: webhookConfigured },
-  ];
-
-  return (
-    <div className="space-y-1.5">
-      {steps.map((step) => (
-        <div key={step.label} className="flex items-center gap-2 text-xs">
-          <span className={step.done ? 'text-green-500' : 'text-gray-300'}>
-            {step.done ? '✅' : '⬜'}
-          </span>
-          <span className={step.done ? 'text-gray-700' : 'text-gray-400'}>
-            {step.label}
-          </span>
-        </div>
-      ))}
     </div>
   );
 }
