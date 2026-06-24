@@ -466,7 +466,14 @@ export function KnowledgeBaseManager({ pageId }: Props) {
       </div>
 
       {/* === Save === */}
-      <button onClick={handleSave} disabled={saving} className="w-full py-3 rounded-xl bg-gradient-to-r from-[#ff6b6b] to-[#ffa94d] text-white font-semibold text-sm hover:shadow-lg transition-all disabled:opacity-50">
+      <button
+        onClick={() => {
+          console.log('[KB] BUTTON CLICKED — calling handleSave');
+          handleSave();
+        }}
+        disabled={saving}
+        className="w-full py-3 rounded-xl bg-gradient-to-r from-[#ff6b6b] to-[#ffa94d] text-white font-semibold text-sm hover:shadow-lg transition-all disabled:opacity-50"
+      >
         {saving ? 'Saving...' : '💾 Save & Generate AI Knowledge'}
       </button>
     </div>
