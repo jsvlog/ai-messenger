@@ -171,10 +171,10 @@ export function KnowledgeBaseManager({ pageId }: Props) {
   };
 
   const handleSave = async () => {
-    const firstField = industry.bizFields[0];
-    if (!bizInfo[firstField.key]?.trim()) { setMessage(`❌ Please enter your ${firstField.label}.`); return; }
-    setSaving(true); setMessage('');
     try {
+      const firstField = industry.bizFields[0];
+      if (!bizInfo[firstField.key]?.trim()) { setMessage(`❌ Please enter your ${firstField.label}.`); return; }
+      setSaving(true); setMessage('');
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
@@ -183,6 +183,8 @@ export function KnowledgeBaseManager({ pageId }: Props) {
       const formData = { industryId, bizInfo, packages, items, policies };
       const markdown = generateMarkdown();
       const title = bizInfo[industry.bizFields[0].key];
+
+      console.log('[KB] Saving knowledge base...', { pageId, title, industry: industry.id });
 
       const { error } = await supabase.from('knowledge_bases').upsert({
         page_id: pageId,
@@ -193,9 +195,14 @@ export function KnowledgeBaseManager({ pageId }: Props) {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'page_id,title' });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[KB] Upsert error:', error);
+        throw new Error(error.message || 'Database save failed');
+      }
 
-      await supabase.from('knowledge_bases').upsert({
+      console.log('[KB] Upsert OK, saving AI context...');
+
+      const { error: ctxError } = await supabase.from('knowledge_bases').upsert({
         page_id: pageId,
         title: title + ' (AI Context)',
         content_md: markdown,
@@ -204,18 +211,24 @@ export function KnowledgeBaseManager({ pageId }: Props) {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'page_id,title' });
 
+      if (ctxError) console.error('[KB] Context upsert error:', ctxError);
+
+      console.log('[KB] Calling embedding API...');
       const res = await fetch('/api/knowledge-base', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pageId, title, contentMd: markdown, contentType: industry.id }),
       });
       const data = await res.json();
+      console.log('[KB] API response:', data);
+
       if (res.ok) {
         setMessage(`✅ Saved! ${data.chunksCreated || '?'} AI chunks generated. Your AI assistant is ready.`);
       } else {
         setMessage(`✅ Saved! (Embeddings: ${data.error || 'pending'})`);
       }
     } catch (e: any) {
+      console.error('[KB] Save error:', e);
       setMessage(`❌ ${e?.message || 'Failed to save'}`);
     }
     setSaving(false);
