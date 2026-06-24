@@ -192,7 +192,7 @@ export default async function DashboardPage({
                 🚀 Let&apos;s get your Facebook Page connected!
               </h2>
               <p className="text-white/90 max-w-xl">
-                Your page has been set up by our team. Connect it below and the AI will handle customer inquiries 24/7 — in warm, friendly Taglish.
+                Your page is being set up by our team. Once connected, the AI will handle customer inquiries 24/7 — in warm, friendly Taglish.
               </p>
             </div>
           </div>
@@ -234,47 +234,60 @@ export default async function DashboardPage({
               </div>
             </section>
 
-            {/* Quick Links */}
-            <section className="rounded-2xl bg-white/80 backdrop-blur-sm border border-orange-100 shadow-lg shadow-orange-100/50 p-4">
-              <h3 className="text-sm font-semibold text-gray-800 mb-3">🔗 Quick Links</h3>
-              <div className="space-y-1.5">
-                <Link
-                  href="/dashboard/leads"
-                  className="block text-xs text-gray-600 hover:text-[#ff6b6b] transition-colors py-1.5 px-2 rounded-lg hover:bg-orange-50"
-                >
-                  📋 View All Leads
-                </Link>
-                {activePage && (
+            {/* Quick Links — Admin only */}
+            {isAdmin && (
+              <section className="rounded-2xl bg-white/80 backdrop-blur-sm border border-orange-100 shadow-lg shadow-orange-100/50 p-4">
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">🔗 Quick Links</h3>
+                <div className="space-y-1.5">
                   <Link
-                    href={`/dashboard/connect`}
+                    href="/dashboard/leads"
                     className="block text-xs text-gray-600 hover:text-[#ff6b6b] transition-colors py-1.5 px-2 rounded-lg hover:bg-orange-50"
                   >
-                    ➕ Connect Another Page
+                    📋 View All Leads
                   </Link>
-                )}
-              </div>
-            </section>
+                  {activePage && (
+                    <Link
+                      href={`/dashboard/connect`}
+                      className="block text-xs text-gray-600 hover:text-[#ff6b6b] transition-colors py-1.5 px-2 rounded-lg hover:bg-orange-50"
+                    >
+                      ➕ Connect Another Page
+                    </Link>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* Client help note */}
+            {!isAdmin && (
+              <section className="rounded-2xl bg-white/80 backdrop-blur-sm border border-orange-100 shadow-lg shadow-orange-100/50 p-4">
+                <div className="p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs text-blue-600 text-center">
+                  Need a new page connected? Contact us and we'll set it up for you. 📩
+                </div>
+              </section>
+            )}
           </div>
 
           {/* MAIN CONTENT */}
           <div className="lg:col-span-3 space-y-6 order-1 lg:order-2">
-            {/* Facebook Connect */}
-            <section className="rounded-2xl bg-white/80 backdrop-blur-sm border border-orange-100 shadow-lg shadow-orange-100/50 p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <span className="text-xl">📘</span> {hasPages ? 'Manage Pages' : 'Connect Your Facebook Page'}
-              </h3>
-              <FacebookConnect
-                userId={user.id}
-                existingPages={pages || []}
-              />
-              {(!pages || pages.length === 0) && (
-                <p className="mt-3 text-center text-xs text-gray-400">
-                  <Link href="/dashboard/connect" className="hover:text-[#ff6b6b] underline">
-                    Or connect manually with Page Token →
-                  </Link>
-                </p>
-              )}
-            </section>
+            {/* Facebook Connect — Admin only */}
+            {isAdmin && (
+              <section className="rounded-2xl bg-white/80 backdrop-blur-sm border border-orange-100 shadow-lg shadow-orange-100/50 p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <span className="text-xl">📘</span> {hasPages ? 'Manage Pages' : 'Connect Your Facebook Page'}
+                </h3>
+                <FacebookConnect
+                  userId={user.id}
+                  existingPages={pages || []}
+                />
+                {(!pages || pages.length === 0) && (
+                  <p className="mt-3 text-center text-xs text-gray-400">
+                    <Link href="/dashboard/connect" className="hover:text-[#ff6b6b] underline">
+                      Or connect manually with Page Token →
+                    </Link>
+                  </p>
+                )}
+              </section>
+            )}
 
             {/* AI Toggle */}
             {activePage && (

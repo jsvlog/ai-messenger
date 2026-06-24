@@ -1,17 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+const ADMIN_EMAILS = ['sczyrynjohnson@gmail.com'];
+
 export default function ConnectPage() {
   const [step, setStep] = useState(1);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [pageId, setPageId] = useState('');
   const [pageName, setPageName] = useState('');
   const [accessToken, setAccessToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const router = useRouter();
+
+  useEffect(() => {
+    (async () => {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.replace('/dashboard'); return; }
+      const isAdmin = ADMIN_EMAILS.includes(user.email || '');
+      if (!isAdmin) { router.replace('/dashboard?error=admin_only'); return; }
+      setAuthorized(true);
+    })();
+  }, [router]);
+
+  if (authorized === null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#fef9f0] via-[#fff5eb] to-[#fef3e6] flex items-center justify-center">
+        <div className="text-sm text-gray-400 animate-pulse">Checking access...</div>
+      </div>
+    );
+  }
 
   const handleConnect = async () => {
     if (!pageId || !pageName || !accessToken) {

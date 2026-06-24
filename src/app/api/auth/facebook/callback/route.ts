@@ -16,6 +16,22 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Admin-only guard: only authorized admins can connect new pages
+  const ADMIN_EMAILS = ['sczyrynjohnson@gmail.com'];
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.redirect(
+      new URL('/dashboard?error=no_user', request.url).toString()
+    );
+  }
+  const isAdmin = ADMIN_EMAILS.includes(user.email || '');
+  if (!isAdmin) {
+    return NextResponse.redirect(
+      new URL('/dashboard?error=admin_only', request.url).toString()
+    );
+  }
+
   try {
     // Step 1: Exchange code for short-lived user token
     const appId = process.env.NEXT_PUBLIC_META_APP_ID!;
@@ -69,12 +85,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Step 4: Save connected pages to DB
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
+    // Step 4: Save connected pages to DB (user already verified as admin above)
     const serviceClient = getServiceClient();
-    const userId = user?.id || state;
+    const userId = user.id || state;
 
     if (!userId) {
       return NextResponse.redirect(

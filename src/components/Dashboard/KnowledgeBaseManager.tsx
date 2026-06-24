@@ -2,7 +2,7 @@
 
 // ============================================================
 // KnowledgeBaseManager — Industry-aware structured KB builder
-// Collapsible accordion sections for organized, scannable UX
+// Collapsible accordion sections with labeled fields for clear UX
 // ============================================================
 
 import { useState, useEffect, useCallback } from 'react';
@@ -35,6 +35,10 @@ function SectionHeader({ icon, title, count, badge, expanded, onClick }: {
       )}
     </button>
   );
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return <label className="block text-[11px] font-medium text-gray-500 mb-1">{children}</label>;
 }
 
 export function KnowledgeBaseManager({ pageId }: Props) {
@@ -191,8 +195,7 @@ export function KnowledgeBaseManager({ pageId }: Props) {
       const markdown = generateMarkdown();
       const title = bizInfo[industry.bizFields[0].key];
 
-      console.log('[KB] Saving knowledge base...', { pageId, title, industry: industry.id });
-
+      // 1. Save form data as JSON (for reloading into the form on next visit)
       const { error } = await supabase.from('knowledge_bases').upsert({
         page_id: pageId,
         title,
@@ -202,39 +205,20 @@ export function KnowledgeBaseManager({ pageId }: Props) {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'page_id,title' });
 
-      if (error) {
-        console.error('[KB] Upsert error:', error);
-        throw new Error(error.message || 'Database save failed');
-      }
+      if (error) throw new Error(error.message || 'Database save failed');
 
-      console.log('[KB] Upsert OK, saving AI context...');
-
-      const { error: ctxError } = await supabase.from('knowledge_bases').upsert({
-        page_id: pageId,
-        title: title + ' (AI Context)',
-        content_md: markdown,
-        content_type: industry.id + '_context',
-        is_active: true,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'page_id,title' });
-
-      if (ctxError) console.error('[KB] Context upsert error:', ctxError);
-
-      console.log('[KB] Calling embedding API...');
+      // 2. Call API to save AI context (markdown text, separate title — no embeddings)
       const res = await fetch('/api/knowledge-base', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pageId, title, contentMd: markdown, contentType: industry.id }),
       });
       const data = await res.json();
-      console.log('[KB] API response:', data);
 
-      if (res.ok && data.chunksCreated > 0) {
-        setMessage(`✅ Saved! ${data.chunksCreated} AI knowledge chunks generated.`);
-      } else if (res.ok) {
-        setMessage(`⚠️ Saved, but 0 AI chunks created. The AI may not use your KB. Try saving again.`);
+      if (res.ok && data.success) {
+        setMessage(`✅ Saved! Your AI assistant now knows about ${title}.`);
       } else {
-        setMessage(`⚠️ Saved, but AI embeddings failed: ${data.error || 'unknown error'}. The AI won't use your KB until this is fixed.`);
+        setMessage(`⚠️ Form saved, but AI context failed: ${data.error || 'unknown error'}`);
       }
     } catch (e: any) {
       console.error('[KB] Save error:', e);
@@ -302,14 +286,16 @@ export function KnowledgeBaseManager({ pageId }: Props) {
           <div className="px-4 pb-4 space-y-3">
             <div className="grid sm:grid-cols-2 gap-3">
               {industry.bizFields.map(f => (
-                <input
-                  key={f.key}
-                  type={f.type === 'number' ? 'number' : 'text'}
-                  value={bizInfo[f.key] || ''}
-                  onChange={(e) => setBizInfo({ ...bizInfo, [f.key]: e.target.value })}
-                  placeholder={f.placeholder}
-                  className={`px-3 py-2 rounded-lg border border-orange-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/50 ${f.type === 'textarea' ? 'col-span-2' : ''}`}
-                />
+                <div key={f.key} className={f.type === 'textarea' ? 'col-span-2' : ''}>
+                  <FieldLabel>{f.label}</FieldLabel>
+                  <input
+                    type={f.type === 'number' ? 'number' : 'text'}
+                    value={bizInfo[f.key] || ''}
+                    onChange={(e) => setBizInfo({ ...bizInfo, [f.key]: e.target.value })}
+                    placeholder={f.placeholder}
+                    className="w-full px-3 py-2 rounded-lg border border-orange-200 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400/50"
+                  />
+                </div>
               ))}
             </div>
           </div>
@@ -330,7 +316,7 @@ export function KnowledgeBaseManager({ pageId }: Props) {
           <div className="px-4 pb-4 space-y-2">
             {packages.map((pkg, i) => {
               const pkgName = pkg[industry.packageFields[0]?.key] || pkg.name || '';
-              const isExpanded = expandedPackages[pkg.id] !== false; // default open for first, collapsed for rest
+              const isExpanded = expandedPackages[pkg.id] !== false;
               const filledFields = industry.packageFields.filter(pf => pf.key !== 'name' && pkg[pf.key]).length;
               const totalFields = industry.packageFields.filter(pf => pf.key !== 'name').length;
 
@@ -368,14 +354,16 @@ export function KnowledgeBaseManager({ pageId }: Props) {
                   {isExpanded && (
                     <div className="px-3 pb-3 space-y-2 border-t border-amber-50">
                       {industry.packageFields.map(pf => (
-                        <input
-                          key={pf.key}
-                          type={pf.type === 'number' ? 'number' : 'text'}
-                          value={pkg[pf.key] || ''}
-                          onChange={(e) => updatePackage(pkg.id, pf.key, e.target.value)}
-                          placeholder={pf.placeholder}
-                          className="w-full px-3 py-2 rounded-lg border border-amber-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50"
-                        />
+                        <div key={pf.key}>
+                          <FieldLabel>{pf.label}</FieldLabel>
+                          <input
+                            type={pf.type === 'number' ? 'number' : 'text'}
+                            value={pkg[pf.key] || ''}
+                            onChange={(e) => updatePackage(pkg.id, pf.key, e.target.value)}
+                            placeholder={pf.placeholder}
+                            className="w-full px-3 py-2 rounded-lg border border-amber-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400/50"
+                          />
+                        </div>
                       ))}
                     </div>
                   )}
@@ -460,14 +448,16 @@ export function KnowledgeBaseManager({ pageId }: Props) {
           <div className="px-4 pb-4">
             <div className="grid sm:grid-cols-2 gap-3">
               {industry.policyFields.map(f => (
-                <input
-                  key={f.key}
-                  type="text"
-                  value={policies[f.key] || ''}
-                  onChange={(e) => setPolicies({ ...policies, [f.key]: e.target.value })}
-                  placeholder={f.placeholder}
-                  className="px-3 py-2 rounded-lg border border-blue-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-                />
+                <div key={f.key}>
+                  <FieldLabel>{f.label}</FieldLabel>
+                  <input
+                    type="text"
+                    value={policies[f.key] || ''}
+                    onChange={(e) => setPolicies({ ...policies, [f.key]: e.target.value })}
+                    placeholder={f.placeholder}
+                    className="w-full px-3 py-2 rounded-lg border border-blue-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                  />
+                </div>
               ))}
             </div>
           </div>
@@ -475,16 +465,20 @@ export function KnowledgeBaseManager({ pageId }: Props) {
       </div>
 
       {/* === Save === */}
-      <button
-        onClick={() => {
-          console.log('[KB] BUTTON CLICKED — calling handleSave');
-          handleSave();
-        }}
-        disabled={saving}
-        className="w-full py-3 rounded-xl bg-gradient-to-r from-[#ff6b6b] to-[#ffa94d] text-white font-semibold text-sm hover:shadow-lg transition-all disabled:opacity-50"
-      >
-        {saving ? 'Saving...' : '💾 Save & Generate AI Knowledge'}
-      </button>
+      <div className="space-y-2">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-[#ff6b6b] to-[#ffa94d] text-white font-semibold text-sm hover:shadow-lg transition-all disabled:opacity-50"
+        >
+          {saving ? 'Saving...' : '💾 Save & Update AI Knowledge'}
+        </button>
+        {bizName && (
+          <p className="text-center text-[11px] text-gray-400">
+            Last saved data reloads when you come back. The AI uses this info to answer customers.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

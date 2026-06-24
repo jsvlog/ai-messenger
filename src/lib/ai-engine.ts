@@ -76,7 +76,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
  * Injects knowledge base context from vector search results.
  */
 export function buildTaglishPrompt(
-  contextChunks: VectorMatchResult[],
+  knowledgeBase: string,
   leadInfo: LeadInfo,
   chatHistory: ChatHistoryItem[],
   pageName: string,
@@ -84,8 +84,8 @@ export function buildTaglishPrompt(
 ): string {
   const industryConfig = getIndustry(industry);
   const contextText =
-    contextChunks.length > 0
-      ? contextChunks.map((c, i) => `[Context ${i + 1}] (relevance: ${(c.similarity * 100).toFixed(0)}%)\n${c.content}`).join('\n\n')
+    knowledgeBase.trim()
+      ? knowledgeBase
       : 'No specific knowledge base available yet — ask the customer for details and offer to help.';
 
   const leadContext =

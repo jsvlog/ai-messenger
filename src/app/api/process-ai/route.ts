@@ -1,5 +1,5 @@
 // ============================================================
-// AI Processing Route — Vector search → OpenRouter → Meta Send
+// AI Processing Route — Full KB context → OpenRouter → Meta Send
 // ============================================================
 // Called by the webhook handler asynchronously (after 200 OK).
 // Internal only — protected by X-Internal-Secret header.
@@ -8,7 +8,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/server';
 import { sendMessage, getSenderProfile } from '@/lib/facebook';
 import {
-  generateEmbedding,
   callOpenRouter,
   buildTaglishPrompt,
   extractLeadInfo,
@@ -16,7 +15,6 @@ import {
 import type {
   LeadInfo,
   ChatHistoryItem,
-  VectorMatchResult,
   ConversationContext,
 } from '@/lib/types';
 import { checkTierLimit } from '@/lib/tier-limit';
@@ -63,7 +61,6 @@ export async function POST(request: NextRequest) {
     // ==================================================
     // 2. Check free tier limit
     // ==================================================
-    // Get the user_id for this page
     const { data: pageOwner } = await supabase
       .from('connected_pages')
       .select('user_id')
@@ -74,7 +71,6 @@ export async function POST(request: NextRequest) {
       const tierCheck = await checkTierLimit(page_id, pageOwner.user_id, supabase);
       if (!tierCheck.allowed) {
         console.log('[Process-AI] Free tier limit reached — sending upgrade prompt');
-        // Send an upgrade nudge instead of AI reply
         await sendMessage(
           page_access_token,
           sender_psid,
@@ -95,7 +91,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (!convo) {
-      // First message in this conversation — create context
       const { data: newConvo } = await supabase
         .from('conversation_context')
         .insert({
@@ -128,7 +123,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ==================================================
-    // 3. Extract lead info from the incoming message
+    // 4. Extract lead info from the incoming message
     // ==================================================
     const contextData = convo.context_json as ConversationContext['context_json'];
     const updatedLeadInfo = extractLeadInfo(message_text, contextData.lead_info);
@@ -136,45 +131,42 @@ export async function POST(request: NextRequest) {
       JSON.stringify(updatedLeadInfo) !== JSON.stringify(contextData.lead_info);
 
     // ==================================================
-    // 4. Vector similarity search on knowledge base
+    // 5. Load full knowledge base text (no embeddings needed)
     // ==================================================
-    let matchedChunks: VectorMatchResult[] = [];
+    // Gemini 2.5 Flash has 1M token context — we pass the full KB as markdown.
+    const { data: kbRecords } = await supabase
+      .from('knowledge_bases')
+      .select('title, content_md, content_type')
+      .eq('page_id', page_id)
+      .eq('is_active', true);
 
-    try {
-      // Generate embedding for the customer's question
-      const embedding = await generateEmbedding(message_text);
+    // Separate form data (JSON) from AI context (markdown)
+    let knowledgeBase = '';
+    let industryType: 'rentals' | 'catering' | 'general' = 'general';
 
-      if (embedding.length > 0) {
-        // Query Supabase pgvector
-        const { data: matches, error: matchError } = await supabase.rpc(
-          'match_knowledge_chunks',
-          {
-            query_embedding: embedding,
-            p_page_id: page_id,
-            match_threshold: 0.65,
-            match_count: 5,
-          }
-        );
-
-        if (matchError) {
-          console.error('[Process-AI] Vector search error:', matchError);
-        } else if (matches) {
-          matchedChunks = matches as VectorMatchResult[];
+    if (kbRecords && kbRecords.length > 0) {
+      for (const rec of kbRecords) {
+        const ct = rec.content_type || '';
+        if (ct.endsWith('_context')) {
+          // This is the AI context markdown record
+          knowledgeBase += rec.content_md + '\n\n';
+        } else {
+          // This is the form data JSON record — extract industry
+          try {
+            const parsed = JSON.parse(rec.content_md);
+            if (parsed.industryId && ['catering', 'rentals', 'general'].includes(parsed.industryId)) {
+              industryType = parsed.industryId as any;
+            }
+          } catch {}
         }
       }
-    } catch (err) {
-      console.error('[Process-AI] Embedding/vector error:', err);
-      // Continue without context — the AI prompt will handle it
     }
 
-    console.log(
-      `[Process-AI] Found ${matchedChunks.length} relevant knowledge chunks (top similarity: ${
-        matchedChunks[0] ? (matchedChunks[0].similarity * 100).toFixed(1) + '%' : 'N/A'
-      })`
-    );
+    knowledgeBase = knowledgeBase.trim();
+    console.log(`[Process-AI] KB loaded: ${knowledgeBase.length} chars, industry: ${industryType}`);
 
     // ==================================================
-    // 5. Build chat history
+    // 6. Build chat history
     // ==================================================
     const chatHistory: ChatHistoryItem[] = [
       ...contextData.history,
@@ -182,7 +174,7 @@ export async function POST(request: NextRequest) {
     ];
 
     // ==================================================
-    // 6. Get sender profile (for personalization)
+    // 7. Get sender profile (for personalization)
     // ==================================================
     let senderName = '';
     try {
@@ -191,18 +183,8 @@ export async function POST(request: NextRequest) {
         senderName = profile.first_name;
       }
     } catch {
-      // Non-critical — continue without name
+      // Non-critical
     }
-
-    // ==================================================
-    // 7. Fetch knowledge base for industry detection
-    // ==================================================
-    const { data: kbData } = await supabase
-      .from('knowledge_bases')
-      .select('content_type, content_md')
-      .eq('page_id', page_id)
-      .eq('is_active', true)
-      .limit(5);
 
     // ==================================================
     // 8. Build Taglish prompt + Call OpenRouter
@@ -210,24 +192,8 @@ export async function POST(request: NextRequest) {
     const greeting = senderName ? `${senderName}, ` : '';
     const userMessageForAI = `${greeting}Customer message: "${message_text}"`;
 
-    // Determine industry from KB content_type
-    let industryType: 'rentals' | 'catering' | 'general' = 'general';
-    if (kbData && kbData.length > 0) {
-      const ct = kbData[0].content_type || '';
-      if (ct.includes('catering')) industryType = 'catering';
-      else if (ct.includes('rentals')) industryType = 'rentals';
-      else if (ct.includes('salon') || ct.includes('clinic') || ct.includes('photography') || ct.includes('realestate')) industryType = 'general';
-      // Try to read from stored JSON
-      try {
-        const parsed = JSON.parse(kbData[0].content_md);
-        if (parsed.industryId) {
-          industryType = (['catering', 'rentals', 'general'].includes(parsed.industryId) ? parsed.industryId : 'general') as any;
-        }
-      } catch {}
-    }
-
     const systemPrompt = buildTaglishPrompt(
-      matchedChunks,
+      knowledgeBase,
       updatedLeadInfo,
       chatHistory,
       page_name,
@@ -242,12 +208,12 @@ export async function POST(request: NextRequest) {
     );
 
     // ==================================================
-    // 8. Send reply via Meta Send API
+    // 9. Send reply via Meta Send API
     // ==================================================
     const sendResult = await sendMessage(page_access_token, sender_psid, aiResponse);
 
     // ==================================================
-    // 9. Save outgoing message to DB
+    // 10. Save outgoing message to DB
     // ==================================================
     await supabase.from('message_logs').insert({
       page_id,
@@ -258,18 +224,14 @@ export async function POST(request: NextRequest) {
       meta_mid: sendResult.messageId || null,
       ai_processed: true,
       ai_response: aiResponse,
-      ai_confidence: matchedChunks[0]?.similarity || null,
-      ai_sources: matchedChunks.map((c) => ({
-        id: c.id,
-        similarity: c.similarity,
-        snippet: c.content.slice(0, 100),
-      })),
+      ai_confidence: null,
+      ai_sources: null,
       ai_latency_ms: aiResult.latencyMs,
       is_from_admin: false,
     });
 
     // ==================================================
-    // 10. Update conversation context
+    // 11. Update conversation context
     // ==================================================
     const updatedHistory: ChatHistoryItem[] = [
       ...chatHistory,
@@ -280,7 +242,6 @@ export async function POST(request: NextRequest) {
       },
     ];
 
-    // Keep only last 20 messages to avoid context bloat
     const trimmedHistory = updatedHistory.slice(-20);
 
     await supabase
@@ -295,7 +256,7 @@ export async function POST(request: NextRequest) {
       .eq('id', convo.id);
 
     // ==================================================
-    // 11. Mark incoming message as processed
+    // 12. Mark incoming message as processed
     // ==================================================
     await supabase
       .from('message_logs')
@@ -312,7 +273,7 @@ export async function POST(request: NextRequest) {
       ai_model: aiResult.model,
       latency_ms: totalMs,
       sent: sendResult.success,
-      chunks_used: matchedChunks.length,
+      kb_chars: knowledgeBase.length,
       lead_captured: updatedLeadInfo.captured,
     });
   } catch (err) {
