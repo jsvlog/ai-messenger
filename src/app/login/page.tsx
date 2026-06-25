@@ -4,7 +4,8 @@
 export const dynamic = 'force-dynamic';
 
 // ============================================================
-// Login Page — Email/Password + Facebook OAuth
+// Login Page — Email/Password only (no signup)
+// Admin creates accounts manually via /dashboard/admin
 // ============================================================
 
 import { useState } from 'react';
@@ -15,53 +16,26 @@ import { Suspense } from 'react';
 function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const router = useRouter();
 
   const supabase = createClient();
 
-  const handleEmailAuth = async (e: React.FormEvent) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
 
-    if (isSignUp) {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-      if (error) {
-        setMessage(`❌ ${error.message}`);
-      } else {
-        // Try to sign in immediately (works when email confirmation is disabled)
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (signInError) {
-          // Email confirmation likely required
-          setMessage('✅ Account created! Check your email for the confirmation link.');
-        } else {
-          router.push('/dashboard');
-          router.refresh();
-        }
-      }
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) {
+      setMessage(`❌ ${error.message}`);
     } else {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) {
-        setMessage(`❌ ${error.message}`);
-      } else {
-        router.push('/dashboard');
-        router.refresh();
-      }
+      router.push('/dashboard');
+      router.refresh();
     }
 
     setLoading(false);
@@ -90,11 +64,11 @@ function LoginForm() {
         {/* Auth card */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-xl shadow-orange-100/50 border border-orange-100">
           <h2 className="text-lg font-semibold text-gray-800 mb-6 text-center">
-            {isSignUp ? 'Create an Account' : 'Welcome Back'}
+            Welcome Back
           </h2>
 
           {/* Email/Password form */}
-          <form onSubmit={handleEmailAuth} className="space-y-4">
+          <form onSubmit={handleSignIn} className="space-y-4">
             <div>
               <label className="text-sm text-gray-600 block mb-1">Email</label>
               <input
@@ -124,20 +98,25 @@ function LoginForm() {
               disabled={loading}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-[#ff6b6b] to-[#ffa94d] text-white font-semibold hover:shadow-lg hover:shadow-orange-300/40 transition-all duration-200 disabled:opacity-50"
             >
-              {loading ? 'Please wait...' : isSignUp ? 'Create Account' : 'Sign In'}
+              {loading ? 'Please wait...' : 'Sign In'}
             </button>
           </form>
 
-          {/* Toggle sign in/up */}
-          <p className="text-center text-sm text-gray-500 mt-5">
-            {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-[#ff6b6b] hover:text-[#ffa94d] font-medium transition-colors"
+          {/* Get account info */}
+          <div className="mt-6 p-3 rounded-xl bg-blue-50 border border-blue-100 text-center">
+            <p className="text-xs text-blue-600">
+              Don't have an account? Message our official Facebook page to get one.
+            </p>
+            <a
+              href=""
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 mt-2 text-xs font-medium text-[#1877f2] hover:underline"
             >
-              {isSignUp ? 'Sign In' : 'Sign Up'}
-            </button>
-          </p>
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+              Visit our Facebook page
+            </a>
+          </div>
 
           {message && (
             <p className={`mt-4 text-sm text-center ${message.startsWith('✅') ? 'text-green-600' : 'text-red-500'}`}>

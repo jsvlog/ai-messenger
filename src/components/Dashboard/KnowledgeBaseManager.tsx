@@ -48,7 +48,7 @@ export function KnowledgeBaseManager({ pageId }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Industry selector
-  const [industryId, setIndustryId] = useState('catering');
+  const [industryId, setIndustryId] = useState('general');
   const industry: IndustryConfig = getIndustry(industryId);
 
   // Business info
@@ -63,12 +63,16 @@ export function KnowledgeBaseManager({ pageId }: Props) {
   // Policies
   const [policies, setPolicies] = useState<Record<string, string>>({});
 
+  // Other Info (free-form — custom instructions, pasted pricing, special rules)
+  const [customInfo, setCustomInfo] = useState('');
+
   // Collapse state for sections
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     business: true,
     packages: true,
     items: false,
     policies: false,
+    other: false,
   });
 
   // Collapse state for individual packages (by pkg.id)
@@ -100,6 +104,7 @@ export function KnowledgeBaseManager({ pageId }: Props) {
           if (parsed.packages) setPackages(parsed.packages);
           if (parsed.items) setItems(parsed.items);
           if (parsed.policies) setPolicies(parsed.policies);
+          if (parsed.customInfo) setCustomInfo(parsed.customInfo);
         } catch {}
       }
     } catch {}
@@ -108,12 +113,6 @@ export function KnowledgeBaseManager({ pageId }: Props) {
 
   useEffect(() => { loadExisting(); }, [loadExisting]);
 
-  // When industry changes, reset item categories
-  const handleIndustryChange = (newId: string) => {
-    setIndustryId(newId);
-    const newIndustry = getIndustry(newId);
-    setItems(prev => prev.map(it => ({ ...it, category: newIndustry.itemCategories[0] })));
-  };
 
   // Helpers
   const addPackage = () => {
@@ -178,6 +177,10 @@ export function KnowledgeBaseManager({ pageId }: Props) {
       });
     }
 
+    if (customInfo.trim()) {
+    md += `## Other Information\n\n${customInfo.trim()}\n\n`;
+  }
+
     return md;
   };
 
@@ -191,7 +194,7 @@ export function KnowledgeBaseManager({ pageId }: Props) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not logged in');
 
-      const formData = { industryId, bizInfo, packages, items, policies };
+      const formData = { industryId, bizInfo, packages, items, policies, customInfo };
       const markdown = generateMarkdown();
       const title = bizInfo[industry.bizFields[0].key];
 
@@ -242,24 +245,6 @@ export function KnowledgeBaseManager({ pageId }: Props) {
     <div className="space-y-4">
       {message && <div className={`p-3 rounded-xl text-sm ${message.startsWith('✅') ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>{message}</div>}
 
-      {/* === Industry Selector (always visible) === */}
-      <div className="p-4 rounded-xl bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200">
-        <h4 className="text-sm font-semibold text-gray-700 mb-3">🏷️ What kind of business is this?</h4>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {INDUSTRIES.map(ind => (
-            <button
-              key={ind.id}
-              onClick={() => handleIndustryChange(ind.id)}
-              className={`p-2.5 rounded-xl border text-left transition-all ${industryId === ind.id ? 'border-[#ff6b6b] bg-white shadow-md' : 'border-orange-100 bg-white/50 hover:bg-white'}`}
-            >
-              <div className="text-lg mb-0.5">{ind.icon}</div>
-              <div className="text-xs font-medium text-gray-800">{ind.label}</div>
-              <div className="text-[10px] text-gray-400 mt-0.5 leading-tight">{ind.tagline}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* === Quick Summary Bar === */}
       {bizName && (
         <div className="flex flex-wrap items-center gap-3 px-4 py-2.5 rounded-xl bg-white/90 border border-orange-100 text-xs text-gray-500">
@@ -270,6 +255,7 @@ export function KnowledgeBaseManager({ pageId }: Props) {
           <span>{filledItems}/{totalItems} items</span>
           <span className="text-gray-300">·</span>
           <span>{filledPolicies}/{totalPolicies} policies</span>
+          {customInfo.trim() && (<><span className="text-gray-300">·</span><span>📝 custom info</span></>)}
         </div>
       )}
 
@@ -460,6 +446,33 @@ export function KnowledgeBaseManager({ pageId }: Props) {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+      </div>
+
+
+      {/* === Other Info (free-form) === */}
+      <div className="rounded-xl bg-purple-50/50 border border-purple-100 overflow-hidden">
+        <SectionHeader
+          icon="📝"
+          title="Other Information"
+          badge={customInfo.trim() ? '✓ filled' : undefined}
+          expanded={expandedSections.other}
+          onClick={() => toggleSection('other')}
+        />
+        {expandedSections.other && (
+          <div className="px-4 pb-4">
+            <FieldLabel>Paste any additional info, special instructions, or pricing details for the AI</FieldLabel>
+            <textarea
+              value={customInfo}
+              onChange={(e) => setCustomInfo(e.target.value)}
+              placeholder={"e.g.\n- For packages not listed above, here are the prices...\n- When a customer asks about X, respond with Y...\n- We don't accept returns after 7 days\n- Our promo isBuy 1 Take 1 every Friday"}
+              rows={6}
+              className="w-full px-3 py-2 rounded-lg border border-purple-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400/50 resize-y bg-white/60"
+            />
+            <p className="text-[10px] text-gray-400 mt-1.5">
+              Anything you put here is added to the AI's knowledge base. Use it for custom pricing, special rules, or instructions on how the AI should respond.
+            </p>
           </div>
         )}
       </div>
